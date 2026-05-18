@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대입 지원 통계 분석 | Admission Stats Analyzer</title>
+    <meta name="description" content="대학 입시 지원 통계를 분석하고 시각화하는 대시보드. 대학별, 전형별 지원 현황을 한눈에 파악하세요.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <!-- Background Particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- Header -->
+    <header class="header" id="appHeader">
+        <div class="header-content">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#logoGrad)" />
+                        <path d="M8 22L16 10L24 22H8Z" fill="white" opacity="0.9" />
+                        <path d="M12 22L16 15L20 22H12Z" fill="white" opacity="0.6" />
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#a855f7" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>대입 지원 통계 분석</h1>
+                    <span class="logo-subtitle">Admission Statistics Analyzer</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-ghost" id="btnSampleData" title="샘플 데이터 불러오기">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    샘플 데이터
+                </button>
+                <button class="btn btn-ghost" id="btnPrint" title="분석 결과 인쇄">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9" />
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" />
+                    </svg>
+                    인쇄
+                </button>
+                <button class="btn btn-ghost" id="btnDownloadAll" title="전체 차트 다운로드">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    전체 저장
+                </button>
+                <button class="btn btn-accent" id="btnExportPDF" title="최종 보고서 PDF 다운로드">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    PDF 보고서
+                </button>
+                <button class="btn btn-ghost" id="btnReset" title="초기화">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="1 4 1 10 7 10" />
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                    </svg>
+                    초기화
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Input Section -->
+        <section class="input-section" id="inputSection">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                </div>
+                <div>
+                    <h2>데이터 입력</h2>
+                    <p class="section-desc">대학명, 전형 유형, 모집단위를 입력하세요. 한 줄에 하나의 지원 데이터를 입력합니다.</p>
+                </div>
+            </div>
+
+            <div class="input-card">
+                <div class="format-guide">
+                    <div class="guide-badge">입력 형식</div>
+                    <div class="guide-examples">
+                        <code>대학명, 전형유형, 모집단위</code>
+                        <span class="guide-separator">또는</span>
+                        <code>대학명 [탭] 전형유형 [탭] 모집단위</code>
+                    </div>
+                </div>
+                <div class="textarea-wrapper">
+                    <textarea id="dataInput" placeholder="예시:
+서울대학교, 수시, 컴퓨터공학부
+연세대학교, 정시, 경영학과
+고려대학교, 수시, 전자공학과
+성균관대학교, 수시, 소프트웨어학과
+한양대학교, 정시, 기계공학부
+
+※ 한 줄에 하나의 지원 데이터를 입력하세요
+※ 전문대학은 자동으로 제외됩니다" rows="12"></textarea>
+                    <div class="textarea-footer">
+                        <span class="line-count" id="lineCount">0줄 입력됨</span>
+                        <button class="btn btn-primary btn-analyze" id="btnAnalyze">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                            분석 시작
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section (Hidden initially) -->
+        <section class="results-section hidden" id="resultsSection">
+            <!-- Summary Cards -->
+            <div class="summary-cards" id="summaryCards">
+                <div class="summary-card" id="cardTotalApps">
+                    <div class="summary-icon" style="--accent: #6366f1;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                    </div>
+                    <div class="summary-data">
+                        <span class="summary-value" id="totalApps">0</span>
+                        <span class="summary-label">총 지원 건수</span>
+                    </div>
+                </div>
+                <div class="summary-card" id="cardTotalUnis">
+                    <div class="summary-icon" style="--accent: #a855f7;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                    </div>
+                    <div class="summary-data">
+                        <span class="summary-value" id="totalUnis">0</span>
+                        <span class="summary-label">지원 대학 수</span>
+                    </div>
+                </div>
+                <div class="summary-card" id="cardTotalTypes">
+                    <div class="summary-icon" style="--accent: #ec4899;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                    </div>
+                    <div class="summary-data">
+                        <span class="summary-value" id="totalTypes">0</span>
+                        <span class="summary-label">전형 유형 수</span>
+                    </div>
+                </div>
+                <div class="summary-card" id="cardExcluded">
+                    <div class="summary-icon" style="--accent: #f59e0b;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                    </div>
+                    <div class="summary-data">
+                        <span class="summary-value" id="excludedCount">0</span>
+                        <span class="summary-label">전문대 제외</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- University Application Chart -->
+                <div class="chart-card chart-large" id="chartCardUni">
+                    <div class="chart-header">
+                        <h3>대학별 지원 현황</h3>
+                        <div class="chart-header-actions">
+                            <span class="chart-badge">TOP 15</span>
+                            <button class="btn-icon" data-action="copy" data-chart="chartUniversity" title="클립보드에 복사">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                            <button class="btn-icon" data-action="download" data-chart="chartUniversity"
+                                data-name="대학별_지원현황" title="이미지 다운로드">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="chartUniversity"></canvas>
+                    </div>
+                </div>
+
+                <!-- Admission Type Chart -->
+                <div class="chart-card" id="chartCardType">
+                    <div class="chart-header">
+                        <h3>전형별 지원 비율</h3>
+                        <div class="chart-header-actions">
+                            <button class="btn-icon" data-action="copy" data-chart="chartType" title="클립보드에 복사">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                            <button class="btn-icon" data-action="download" data-chart="chartType" data-name="전형별_지원비율"
+                                title="이미지 다운로드">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="chartType"></canvas>
+                    </div>
+                </div>
+
+                <!-- Type by University Preference -->
+                <div class="chart-card chart-large" id="chartCardTypePref">
+                    <div class="chart-header">
+                        <h3>전형별 선호 대학</h3>
+                        <div class="chart-header-actions">
+                            <div class="chart-filter">
+                                <select id="typeFilter" class="filter-select">
+                                    <option value="all">전체 전형</option>
+                                </select>
+                            </div>
+                            <button class="btn-icon" data-action="copy" data-chart="chartTypePreference"
+                                title="클립보드에 복사">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                            <button class="btn-icon" data-action="download" data-chart="chartTypePreference"
+                                data-name="전형별_선호대학" title="이미지 다운로드">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="chartTypePreference"></canvas>
+                    </div>
+                </div>
+
+                <!-- Department Preference Chart -->
+                <div class="chart-card chart-large" id="chartCardDept">
+                    <div class="chart-header">
+                        <h3>전형별 선호 학과 (모집단위)</h3>
+                        <div class="chart-header-actions">
+                            <div class="chart-filter">
+                                <select id="deptTypeFilter" class="filter-select">
+                                    <option value="all">전체 전형</option>
+                                </select>
+                            </div>
+                            <button class="btn-icon" data-action="copy" data-chart="chartDepartment" title="클립보드에 복사">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                            <button class="btn-icon" data-action="download" data-chart="chartDepartment"
+                                data-name="전형별_선호학과" title="이미지 다운로드">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="chartDepartment"></canvas>
+                    </div>
+                </div>
+
+                <!-- University-Department Heatmap -->
+                <div class="chart-card chart-full" id="chartCardHeatmap">
+                    <div class="chart-header">
+                        <h3>대학-학과 지원 매트릭스</h3>
+                        <div class="chart-header-actions">
+                            <span class="chart-badge">상위 조합</span>
+                            <button class="btn-icon" data-action="copy-card" data-card="chartCardHeatmap"
+                                title="클립보드에 복사">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                            <button class="btn-icon" data-action="download-card" data-card="chartCardHeatmap"
+                                data-name="대학학과_매트릭스" title="이미지 다운로드">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <div class="heatmap-container" id="heatmapContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-table-card" id="dataTableCard">
+                <div class="chart-header">
+                    <h3>상세 데이터 테이블</h3>
+                    <button class="btn btn-ghost btn-sm" id="btnToggleTable">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                        펼치기
+                    </button>
+                </div>
+                <div class="table-wrapper collapsed" id="tableWrapper">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>대학명</th>
+                                <th>전형 유형</th>
+                                <th>모집단위</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 대입 지원 통계 분석기 &middot; Powered by Chart.js</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
