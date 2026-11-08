@@ -99,6 +99,55 @@ details.settings summary{cursor:pointer;font-weight:700;font-size:14px;min-heigh
 .inline input{flex:1 1 auto;width:100%}
 footer{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6;max-width:72ch}
 footer b{color:var(--fg);font-weight:600}
+/* ---- 탭 · 녹음 분석 · 주간 비교 ---- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--muted);padding:10px 14px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent);font-weight:700}
+.stack{display:grid;gap:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row .grow{flex:1 1 180px;min-width:0}
+.progress{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:10px}
+.progress div{height:100%;width:0;background:var(--accent);transition:width .2s}
+.svgbox{overflow:hidden}
+.svgbox svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.svgbox text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.hscroll{overflow-x:auto}
+.hscroll svg{min-width:560px}
+.flist{list-style:none;margin:0;padding:0;display:grid}
+.flist li{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.flist li:first-child{border-top:0}
+.flist b{display:block}
+.flist p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;align-self:start;margin-top:1px}
+.pill.ok{color:var(--ok);background:rgba(57,208,138,.14)}
+.pill.warn{color:var(--warn);background:rgba(255,180,61,.15)}
+.pill.bad{color:var(--bad);background:rgba(255,79,95,.15)}
+.pill.info{color:var(--accent);background:rgba(98,181,255,.14)}
+table.sec tr{cursor:pointer}
+table.sec tr.sel td{background:var(--panel2)}
+table.sec td.dim{color:var(--dim)}
+.heat td{padding:0;min-width:30px;height:28px;text-align:center;font-family:var(--mono);font-size:11px;border:1px solid var(--panel)}
+.heat th{font-family:var(--mono);font-weight:400;font-size:11px;padding:4px 2px;text-align:center}
+.heat td.rowh{text-align:left;padding:0 10px 0 0;font-family:var(--sans);font-size:12px;border:0;white-space:nowrap}
+.cand{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel2);display:grid;gap:8px}
+.cand h3{margin:0;font-size:15px}
+.rank{display:grid;gap:6px}
+.rank div{display:grid;grid-template-columns:52px 1fr;gap:8px;font-size:14px}
+.rank .r{color:var(--muted);font-size:12px;padding-top:2px}
+.rank small{display:block;color:var(--muted);font-size:12px}
+.evid{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:grid;gap:3px}
+.evid b{color:var(--fg);font-weight:600}
+.eqgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.eqband{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:6px}
+.eqband .inline input{width:100%}
+.eqband label{font-size:12px;color:var(--muted);display:grid;gap:2px}
+.on{background:var(--ok)!important;color:#05140d!important;border-color:transparent!important;font-weight:700}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.sw{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.weeklist li{grid-template-columns:auto 1fr auto;align-items:center}
+.weeklist input[type=checkbox]{width:20px;height:20px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;z-index:20;max-width:90vw}
 </style>
 </head>
 <body>
@@ -110,6 +159,13 @@ footer b{color:var(--fg);font-weight:600}
   </div>
 </header>
 
+<nav class="tabs" role="tablist" aria-label="기능">
+  <button role="tab" data-tab="live" aria-selected="true">실시간 측정</button>
+  <button role="tab" data-tab="file" aria-selected="false">녹음 분석</button>
+  <button role="tab" data-tab="week" aria-selected="false">주간 비교</button>
+</nav>
+
+<div id="tab-live">
 <div id="notice" class="notice">「측정 시작」을 누르고 마이크 사용을 허용하세요. 휴대폰을 음향 콘솔 위나 회중석 귀 높이에 두고, 화면이 위를 향하게 놓으면 됩니다.</div>
 <div id="howlBanner" class="banner bad" hidden>하울링 의심 <b id="howlHz">-</b> <span>EQ 대역 <b id="howlBand">-</b></span></div>
 <div id="overBanner" class="banner warn" hidden>기준 초과 <b id="overSec">0</b>초 · 지금 <b id="overVal">-</b></div>
@@ -210,6 +266,109 @@ footer b{color:var(--fg);font-weight:600}
   <b>정확도 안내</b> · 보정하지 않은 휴대폰 값은 실제와 수 dB 이상 다를 수 있습니다. 같은 폰·같은 위치에서 주마다 비교하는 용도로 먼저 쓰고, 정확한 값이 필요하면 소음계로 한 번 보정하세요. 내장 마이크는 100Hz 아래 저음과 100dB 이상 큰 소리를 실제보다 낮게 잡는 경우가 많습니다. USB-C 측정용 마이크를 꽂으면 위 마이크 목록에서 고를 수 있습니다.<br>
   <b>참고</b> · WHO 안전 청취 기준(공연장·행사)은 15분 평균 100 dB(A) 이하입니다.
 </footer>
+</div>
+
+<!-- ================= 녹음 분석 ================= -->
+<div id="tab-file" hidden>
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>녹음 파일 분석 <small>mp3 · m4a · wav — 기기 안에서만 처리</small></h2></div>
+      <div class="row">
+        <input type="file" id="fFile" accept="audio/*,.mp3,.m4a,.wav,.aac,.flac" class="grow" aria-label="녹음 파일 선택">
+      </div>
+      <p class="sub" id="fStatus" style="margin:8px 0 0">콘솔 믹스 녹음을 고르면 음량 흐름, 주파수 균형, 하울링 흔적, 튀는 대역의 원인 후보를 찾아 줍니다. 휴대폰에서는 20분 이하 파일을 권장합니다.</p>
+      <div class="progress" id="fProg" hidden><div></div></div>
+    </section>
+
+    <div id="fResult" class="stack" hidden>
+      <section class="card">
+        <div class="card-head"><h2>요약 <small id="fInfo"></small></h2></div>
+        <ul class="flist" id="fFindings"></ul>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>음량 흐름 · 구간 <small>3초 평균 LUFS · 세로 손잡이를 끌어 경계 조정</small></h2></div>
+        <div class="svgbox" id="fTimeline"></div>
+        <div class="row" style="margin-top:8px">
+          <button id="fPlay">▶ 재생</button>
+          <span class="mono" id="fTime">0:00</span>
+          <button id="fAddB">재생 위치에 경계 추가</button>
+          <button id="fMerge">선택 구간을 다음과 합치기</button>
+          <button id="fAuto">자동으로 다시 나누기</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="field grow">선택 구간 이름<input type="text" id="fSecName" placeholder="예: 1곡 후렴"></label>
+        </div>
+        <div class="tbl"><table class="sec" id="fSecTable">
+          <thead><tr><th>#</th><th>구간</th><th>시간</th><th>평균 LUFS</th><th>최대 구간 대비</th><th>LRA</th><th>PLR</th></tr></thead><tbody></tbody>
+        </table></div>
+        <p class="sub" style="margin-top:6px">LRA는 구간 안의 음량 오르내림(LU), PLR은 순간 최대값과 평균의 차이(dB)입니다. PLR이 10 dB 아래면 많이 눌린 소리입니다. 15초보다 짧은 구간은 대역 판단에서 뺍니다.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>주파수 균형 <small>1/3옥타브 · 각 곡선의 최대값을 0으로</small></h2></div>
+        <div class="svgbox hscroll" id="fSpec"></div>
+        <div class="legend"><span><span class="sw" style="background:var(--accent)"></span>전체</span><span><span class="sw" style="background:var(--c)"></span>선택 구간</span><span><span class="sw" style="background:var(--muted)"></span>전체 경향선(점선)</span><span><span class="sw" style="background:var(--bad);opacity:.5"></span>반복 돌출</span><span><span class="sw" style="background:var(--accent);opacity:.5"></span>반복 함몰</span></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>구간마다 반복되는 대역 <small>경향선 대비 dB · 빨강 돌출 · 파랑 함몰</small></h2></div>
+        <div class="tbl"><table class="heat" id="fHeat"></table></div>
+      </section>
+
+      <section class="card" id="fCandCard">
+        <div class="card-head"><h2>튀는 대역의 원인 후보 <small>녹음 한 개로 하는 추정 · 콘솔에서 확인 필요</small></h2></div>
+        <div class="stack" id="fCands"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>EQ 미리듣기 <small>녹음에 EQ를 덧씌워 방향만 확인</small></h2></div>
+        <div class="eqgrid" id="fEqBands"></div>
+        <div class="row" style="margin-top:10px">
+          <button id="fEqToggle">EQ 꺼짐</button>
+          <button id="fEqSuggest">요약의 제안값 넣기</button>
+          <span class="sub">재생 중에 켜고 끄며 비교하세요. 이어폰 권장.</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>하울링 점검</h2></div>
+        <ul class="flist" id="fHowl"></ul>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>주간 비교에 저장 <small>요약 수치만 이 기기에 저장 · 원음은 저장 안 함</small></h2></div>
+        <div class="row">
+          <label class="field">예배 날짜<input type="date" id="fDate"></label>
+          <label class="field grow">메모<input type="text" id="fMemo" placeholder="예: 보컬 PEQ 560Hz −2dB 적용"></label>
+        </div>
+        <div class="row" style="margin-top:8px"><button class="primary" id="fSave">이 분석 저장</button></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 주간 비교 ================= -->
+<div id="tab-week" hidden>
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>저장된 분석 <small>최대 4개를 골라 겹쳐 보기</small></h2></div>
+      <ul class="flist weeklist" id="wList"></ul>
+      <div class="row" style="margin-top:10px">
+        <button id="wExport">백업 파일 저장</button>
+        <label class="field"><span class="sub">백업 불러오기</span><input type="file" id="wImport" accept=".json,application/json"></label>
+      </div>
+      <p class="sub" style="margin-top:6px">저장 기록은 이 기기의 이 브라우저에만 있습니다. 브라우저 데이터를 지우면 사라지니 가끔 백업 파일을 저장해 두세요.</p>
+    </section>
+    <section class="card" id="wCmpCard" hidden>
+      <div class="card-head"><h2>주파수 균형 비교 <small>전체 대비 대역 레벨(dB)</small></h2></div>
+      <div class="svgbox hscroll" id="wSpec"></div>
+      <div class="legend" id="wLegend"></div>
+      <div class="tbl" style="margin-top:10px"><table id="wTable"></table></div>
+      <p class="sub" style="margin-top:6px">괄호는 바로 앞 날짜와의 차이입니다. 녹음 경로·내보내기 설정(노멀라이즈 등)이 같아야 비교가 정확합니다.</p>
+    </section>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -623,6 +782,587 @@ window.addEventListener('resize', ()=>{ drawHist(); if(!running) drawSpec(perfor
 syncUI(); renderSongs(); drawHist(); drawSpec(performance.now(),0);
 if (!window.isSecureContext) showNotice('지금 주소는 https가 아니라서 마이크가 막힐 수 있습니다. https 주소(예: GitHub Pages, Netlify)에 올려 열어 주세요.', true);
 window.__wvm = {get cur(){return cur}, get howl(){return howl}, get hist(){return hist}, get roll(){return roll}, get bands(){return bands}};
+})();
+</script>
+
+<script>
+/* ===================== 녹음 분석 · 주간 비교 ===================== */
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const FS = 24000, N = 4096, HOP = 2048, BLK = 2400;           // 24kHz로 낮춰 분석(메모리 절약, 10kHz 대역까지)
+const NOM = ['20','25','31.5','40','50','63','80','100','125','160','200','250','315','400','500','630','800','1k','1.25k','1.6k','2k','2.5k','3.15k','4k','5k','6.3k','8k','10k'];
+const FC = NOM.map((_, i) => 1000 * 10 ** ((i - 17) / 10));
+const NB = FC.length, binHz = FS / N;
+const BK0 = [], BK1 = [];
+FC.forEach(fc => { let k0 = Math.max(1, Math.ceil(fc * 10 ** -0.05 / binHz)), k1 = Math.min(N/2 - 1, Math.ceil(fc * 10 ** 0.05 / binHz) - 1); if (k1 < k0) k1 = k0; BK0.push(k0); BK1.push(k1); });
+const NF = Math.floor(24 * Math.log2(11000 / 60)) + 1, FF = [], FK0 = [], FK1 = [];
+for (let i = 0; i < NF; i++){ const f = 60 * 2 ** (i / 24); FF.push(f); let k0 = Math.ceil(f * 2 ** (-1/48) / binHz), k1 = Math.ceil(f * 2 ** (1/48) / binHz) - 1; if (k1 < k0) k0 = k1 = Math.round(f / binHz); FK0.push(k0); FK1.push(k1); }
+const NH = Math.floor(48 * Math.log2(11000 / 100)) + 1, HF = [], HK = [];
+for (let i = 0; i < NH; i++){ const f = 100 * 2 ** (i / 48); HF.push(f); HK.push(Math.round(f / binHz)); }
+const fit0 = FC.map(f => f >= 60 && f <= 11000);
+
+// ---------- 공통 도구 ----------
+const db = v => 10 * Math.log10(v + 1e-20);
+const mmss = s => { s = Math.max(0, s); return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
+const fmtHz = f => f >= 1000 ? (+(f / 1000).toFixed(f >= 10000 ? 0 : 2)) + 'kHz' : Math.round(f) + 'Hz';
+const nearestBand = f => NOM[FC.reduce((b, c, i) => Math.abs(Math.log(c / f)) < Math.abs(Math.log(FC[b] / f)) ? i : b, 0)];
+const NOTE = ['도','도#','레','레#','미','파','파#','솔','솔#','라','라#','시'];
+const noteName = f => { const m = Math.round(69 + 12 * Math.log2(f / 440)); return NOTE[(m % 12 + 12) % 12] + (Math.floor(m / 12) - 1); };
+const el = (t, a = {}, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const txt = (p, x, y, s, a = {}) => { const t = el('text', Object.assign({x, y}, a), p); t.textContent = s; return t; };
+const sleep0 = () => new Promise(r => setTimeout(r, 0));
+function toast(msg){ const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+function median(a){ const b = Float64Array.from(a).sort(); return b.length ? b[b.length >> 1] : NaN; }
+function polyfit2(x, y){ // 2차 최소제곱
+  let s = [0,0,0,0,0], t = [0,0,0];
+  for (let i = 0; i < x.length; i++){ let p = 1; for (let k = 0; k < 5; k++){ s[k] += p; if (k < 3) t[k] += p * y[i]; p *= x[i]; } }
+  const A = [[s[0],s[1],s[2],t[0]],[s[1],s[2],s[3],t[1]],[s[2],s[3],s[4],t[2]]];
+  for (let i = 0; i < 3; i++){ let m = i; for (let r = i+1; r < 3; r++) if (Math.abs(A[r][i]) > Math.abs(A[m][i])) m = r; [A[i],A[m]] = [A[m],A[i]];
+    for (let r = 0; r < 3; r++) if (r !== i){ const f = A[r][i] / A[i][i]; for (let c = i; c < 4; c++) A[r][c] -= f * A[i][c]; } }
+  const c = [A[0][3]/A[0][0], A[1][3]/A[1][1], A[2][3]/A[2][2]];
+  return v => c[0] + c[1]*v + c[2]*v*v;
+}
+function corr(a, b){ const n = a.length; if (n < 3) return NaN; let ma = 0, mb = 0; for (let i = 0; i < n; i++){ ma += a[i]; mb += b[i]; } ma /= n; mb /= n;
+  let sab = 0, saa = 0, sbb = 0; for (let i = 0; i < n; i++){ const x = a[i]-ma, y = b[i]-mb; sab += x*y; saa += x*x; sbb += y*y; } return sab / Math.sqrt(saa*sbb + 1e-20); }
+
+// ---------- FFT 4096 ----------
+const re = new Float64Array(N), im = new Float64Array(N), win = new Float64Array(N), rev = new Uint32Array(N), cs = new Float64Array(N/2), sn = new Float64Array(N/2);
+let winS = 0;
+for (let i = 0; i < N; i++){ win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1)); winS += win[i] * win[i];
+  let r = 0, x = i; for (let b = 0; b < 12; b++){ r = (r << 1) | (x & 1); x >>= 1; } rev[i] = r; }
+for (let i = 0; i < N/2; i++){ cs[i] = Math.cos(2 * Math.PI * i / N); sn[i] = -Math.sin(2 * Math.PI * i / N); }
+function fft(){
+  for (let i = 0; i < N; i++){ const j = rev[i]; if (j > i){ let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let size = 2; size <= N; size <<= 1){ const half = size >> 1, step = N / size;
+    for (let i = 0; i < N; i += size) for (let j = 0, k = 0; j < half; j++, k += step){
+      const a = i + j, b = a + half, tr = re[b]*cs[k] - im[b]*sn[k], ti = re[b]*sn[k] + im[b]*cs[k];
+      re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti; } }
+}
+
+// ---------- K 가중 필터 (ITU-R BS.1770) ----------
+function kCoef(fs){
+  let G = 3.999843853973347, Q = 0.7071752369554196, fc = 1681.974450955533;
+  let K = Math.tan(Math.PI * fc / fs), Vh = 10 ** (G / 20), Vb = Vh ** 0.4996667741545416, a0 = 1 + K / Q + K * K;
+  const s1 = [(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0];
+  fc = 38.13547087602444; Q = 0.5003270373238773; K = Math.tan(Math.PI * fc / fs); a0 = 1 + K / Q + K * K;
+  const s2 = [1, -2, 1, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0];
+  return [s1, s2];
+}
+
+// ---------- 분석 ----------
+let A = null;          // 분석 결과 원자료
+let SEC = null;        // {b:[경계 초], names:[]}
+let selSec = 0, curStats = null, curFindings = null;
+const prog = (p, msg) => { $('#fProg').hidden = false; $('#fProg div').style.width = Math.round(p * 100) + '%'; if (msg) $('#fStatus').textContent = msg; };
+
+async function analyzeBuffer(buf){
+  const mono = buf.numberOfChannels < 2;
+  const L = buf.getChannelData(0), R = mono ? L : buf.getChannelData(1);
+  const n = L.length, nBlk = Math.floor(n / BLK), nFr = Math.max(0, Math.floor((n - N) / HOP) + 1);
+  const kE = new Float32Array(nBlk), pk = new Float32Array(nBlk), eL = new Float32Array(nBlk), eR = new Float32Array(nBlk), eLR = new Float32Array(nBlk);
+  const [s1, s2] = kCoef(FS);
+  const st = [[0,0,0,0],[0,0,0,0]]; // 채널별 [z1,z2,w1,w2]
+  let clipRuns = 0; const clipLen = [0, 0];
+  let t0 = performance.now();
+  for (let b = 0; b < nBlk; b++){
+    let aL = 0, aR = 0, sl = 0, sr = 0, slr = 0, p = 0;
+    const off = b * BLK;
+    for (let ch = 0; ch < (mono ? 1 : 2); ch++){
+      const X = ch ? R : L, z = st[ch]; let acc = 0;
+      for (let i = off; i < off + BLK; i++){
+        const x = X[i];
+        const y1 = s1[0]*x + z[0]; z[0] = s1[1]*x - s1[3]*y1 + z[1]; z[1] = s1[2]*x - s1[4]*y1;
+        const y2 = y1 + z[2]; z[2] = -2*y1 - s2[3]*y2 + z[3]; z[3] = y1 - s2[4]*y2;
+        acc += y2 * y2;
+        const ax = x < 0 ? -x : x; if (ax > p) p = ax;
+        if (ax >= 0.999){ if (++clipLen[ch] === 3) clipRuns++; } else clipLen[ch] = 0;
+      }
+      if (ch) aR = acc / BLK; else aL = acc / BLK;
+    }
+    for (let i = off; i < off + BLK; i++){ const l = L[i], r = R[i]; sl += l*l; sr += r*r; slr += l*r; }
+    kE[b] = mono ? aL : aL + aR; pk[b] = p; eL[b] = sl / BLK; eR[b] = sr / BLK; eLR[b] = slr / BLK;
+    if (performance.now() - t0 > 30){ prog(0.05 + 0.25 * b / nBlk, `음량 분석 중… ${Math.round(100 * b / nBlk)}%`); await sleep0(); t0 = performance.now(); }
+  }
+  // 주파수 분석 + 하울링 추적
+  const bandM = new Float32Array(nFr * NB), bandS = new Float32Array(nFr * NB), fine = new Float32Array(nFr * NF);
+  const norm = 2 / (N * winS), pm = new Float64Array(N/2), ps = new Float64Array(N/2), pdb = new Float64Array(N/2);
+  const hv = new Float64Array(NH), prom = new Float64Array(NH), mask = new Uint8Array(NH), mk = new Uint8Array(NH);
+  const rS = new Int32Array(NH).fill(-1), rL = new Int32Array(NH), rSum = new Float64Array(NH), rCnt = new Int32Array(NH), rV0 = new Float64Array(NH), rV1 = new Float64Array(NH);
+  const runs = [], tmp = new Float64Array(17), tmp2 = new Float64Array(12), tdb = new Float32Array(nFr);
+  const closeRun = i => { const d = (rL[i] - rS[i] + 1) * HOP / FS; if (d >= 0.6) runs.push({i, f: HF[i], t0: (rS[i]*HOP + N/2) / FS, t1: (rL[i]*HOP + N/2) / FS, dur: d, prom: rSum[i] / rCnt[i], trend: rV1[i] - rV0[i], trendRel: (rV1[i] - rV0[i]) - (tdb[rL[i]] - tdb[rS[i]])}); rS[i] = -1; };
+  const sortN = (a, m) => { for (let i = 1; i < m; i++){ const v = a[i]; let j = i - 1; while (j >= 0 && a[j] > v){ a[j+1] = a[j]; j--; } a[j+1] = v; } return a[m >> 1]; };
+  t0 = performance.now();
+  for (let f = 0; f < nFr; f++){
+    const off = f * HOP;
+    for (let i = 0; i < N; i++){ const l = L[off+i], r = R[off+i], w = win[i]; re[i] = 0.5*(l + r)*w; im[i] = 0.5*(l - r)*w; }
+    fft();
+    for (let k = 1; k < N/2; k++){
+      const a = re[k], b = im[k], c = re[N-k], d = im[N-k];
+      const mr = (a + c) / 2, mi = (b - d) / 2, sr_ = (b + d) / 2, si = -(a - c) / 2;
+      pm[k] = (mr*mr + mi*mi) * norm; ps[k] = (sr_*sr_ + si*si) * norm; pdb[k] = db(pm[k]);
+    }
+    { let s = 0; for (let k = 1; k < N/2; k++) s += pm[k]; tdb[f] = db(s); }
+    for (let b = 0; b < NB; b++){ let s = 0, t = 0; for (let k = BK0[b]; k <= BK1[b]; k++){ s += pm[k]; t += ps[k]; } bandM[f*NB + b] = s; bandS[f*NB + b] = t; }
+    for (let i = 0; i < NF; i++){ let s = 0; for (let k = FK0[i]; k <= FK1[i]; k++) s += pm[k]; fine[f*NF + i] = s; }
+    // 하울링: 주변 1/3옥타브 중앙값보다 15dB 이상 + 좁은 피크(±2 bin 밖 중앙값보다 12dB 이상)
+    for (let i = 0; i < NH; i++){ const k = HK[i]; let m = pdb[k-1]; if (pdb[k] > m) m = pdb[k]; if (pdb[k+1] > m) m = pdb[k+1]; hv[i] = m; }
+    for (let i = 0; i < NH; i++){
+      let c = 0; for (let j = Math.max(0, i - 8); j <= Math.min(NH - 1, i + 8); j++) tmp[c++] = hv[j];
+      prom[i] = hv[i] - sortN(tmp, c); mask[i] = 0;
+      if (prom[i] >= 15){ const k = HK[i]; let c2 = 0; for (let j = k - 8; j <= k + 8; j++) if ((j < k - 2 || j > k + 2) && j > 0 && j < N/2) tmp2[c2++] = pdb[j];
+        if (hv[i] - sortN(tmp2, c2) >= 12) mask[i] = 1; }
+    }
+    for (let i = 0; i < NH; i++) mk[i] = mask[i] || (i > 0 && mask[i-1]) || (i < NH - 1 && mask[i+1]) ? 1 : 0;
+    for (let i = 0; i < NH; i++){
+      if (mk[i]){ if (rS[i] < 0){ rS[i] = f; rSum[i] = 0; rCnt[i] = 0; rV0[i] = hv[i]; } rL[i] = f; rSum[i] += prom[i]; rCnt[i]++; rV1[i] = hv[i]; }
+      else if (rS[i] >= 0 && f - rL[i] > 2) closeRun(i);
+    }
+    if (performance.now() - t0 > 30){ prog(0.3 + 0.65 * f / nFr, `주파수 분석 중… ${Math.round(100 * f / nFr)}%`); await sleep0(); t0 = performance.now(); }
+  }
+  for (let i = 0; i < NH; i++) if (rS[i] >= 0) closeRun(i);
+  // 같은 소리 합치기 + 배음 관계
+  runs.sort((a, b) => a.t0 - b.t0 || a.f - b.f);
+  const merged = [];
+  for (const r of runs){
+    const q = merged.find(q => Math.abs(Math.log2(r.f / q.f)) < 0.06 && r.t0 <= q.t1 + 0.5 && r.t1 >= q.t0 - 0.5);
+    if (q){ if (r.dur * r.prom > q.dur * q.prom) Object.assign(q, r); } else merged.push(Object.assign({}, r));
+  }
+  for (const r of merged){ r.harm = [];
+    for (const q of merged){ if (q === r || !(q.t0 < r.t1 && q.t1 > r.t0)) continue; const ratio = q.f / r.f;
+      for (const h of [2,3,4,0.5,1/3,1.5]) if (Math.abs(Math.log2(ratio / h)) < 0.03) r.harm.push(h); } }
+  const suspects = merged.filter(r => r.prom >= 25 && r.trendRel >= 3 && !r.harm.length); // 전체 음량과 무관하게 혼자 커지는 소리
+  return {mono, dur: n / FS, nBlk, nFr, kE, pk, eL, eR, eLR, bandM, bandS, fine, clipRuns, sustained: merged.length, suspects, peak: db(Math.max(...pk) ** 2)};
+}
+
+// ---------- 라우드니스 ----------
+const LK = z => -0.691 + 10 * Math.log10(z + 1e-20);
+function integrated(a, b){
+  const i0 = Math.max(0, Math.ceil(a * 10)), i1 = Math.min(A.nBlk, Math.floor(b * 10));
+  const z = []; for (let j = i0; j + 4 <= i1; j++) z.push((A.kE[j] + A.kE[j+1] + A.kE[j+2] + A.kE[j+3]) / 4);
+  let g = z.filter(v => LK(v) > -70); if (!g.length) return NaN;
+  const rel = LK(g.reduce((s, v) => s + v, 0) / g.length) - 10; g = g.filter(v => LK(v) > rel);
+  return g.length ? LK(g.reduce((s, v) => s + v, 0) / g.length) : NaN;
+}
+function stSeries(){ const out = []; for (let i = 0; i * 5 + 30 <= A.nBlk; i++){ let s = 0; for (let j = i*5; j < i*5 + 30; j++) s += A.kE[j]; out.push(LK(s / 30)); } return out; } // 중심 = i*0.5+1.5초
+function lra(a, b){
+  let v = []; A.st.forEach((x, i) => { const t = i * 0.5 + 1.5; if (t - 1.5 >= a && t + 1.5 <= b && x > -70) v.push(x); });
+  if (v.length < 3) return NaN;
+  const rel = LK(v.reduce((s, x) => s + 10 ** ((x + 0.691) / 10), 0) / v.length) - 20; v = v.filter(x => x > rel).sort((p, q) => p - q);
+  if (v.length < 3) return NaN; const pc = p => v[Math.min(v.length - 1, Math.round(p * (v.length - 1)))];
+  return pc(0.95) - pc(0.10);
+}
+
+// ---------- 자동 구간 나누기 ----------
+function autoSections(){
+  const st = A.st, n = st.length; if (n < 60) return [];
+  const sm = st.map((_, i) => median(st.slice(Math.max(0, i - 4), Math.min(n, i + 5))));
+  const W = 24, sc = new Float64Array(n);
+  for (let i = W; i < n - W; i++){ let a = 0, b = 0; for (let j = 0; j < W; j++){ a += sm[i - W + j]; b += sm[i + j]; } sc[i] = (b - a) / W; }
+  const order = [...sc.keys()].sort((p, q) => Math.abs(sc[q]) - Math.abs(sc[p])), cand = [];
+  for (const i of order){ if (Math.abs(sc[i]) < 3) break; if (cand.every(j => Math.abs(i - j) >= 50)) cand.push(i); }
+  let b = cand.map(i => +(i * 0.5 + 1.5).toFixed(1)).sort((p, q) => p - q);
+  // 15초보다 짧은 구간 없애기
+  let changed = true;
+  while (changed){ changed = false; const edges = [0, ...b, A.dur];
+    for (let k = 0; k < edges.length - 1; k++) if (edges[k+1] - edges[k] < 15){ const rm = k === 0 ? 0 : k - 1 < b.length && k === edges.length - 2 ? k - 1 : k; b.splice(Math.min(rm, b.length - 1), 1); changed = true; break; } }
+  return b;
+}
+
+// ---------- 구간 통계 ----------
+function frameRange(a, b){ const f0 = Math.max(0, Math.ceil((a * FS - N/2) / HOP)), f1 = Math.min(A.nFr - 1, Math.floor((b * FS - N/2) / HOP)); return [f0, f1]; }
+function bandStats(a, b){
+  const [f0, f1] = frameRange(a, b), m = new Float64Array(NB), s = new Float64Array(NB), fn = new Float64Array(NF); let c = 0;
+  for (let f = f0; f <= f1; f++){ c++; for (let k = 0; k < NB; k++){ m[k] += A.bandM[f*NB + k]; s[k] += A.bandS[f*NB + k]; } for (let k = 0; k < NF; k++) fn[k] += A.fine[f*NF + k]; }
+  const lv = [...m].map(v => db(v / Math.max(1, c))), sv = [...s].map(v => db(v / Math.max(1, c)));
+  const xs = [], ys = []; FC.forEach((f, i) => { if (fit0[i]){ xs.push(Math.log2(f)); ys.push(lv[i]); } });
+  const tr = polyfit2(xs, ys), trend = FC.map(f => tr(Math.log2(f)));
+  return {lv, sv, trend, dev: lv.map((v, i) => v - trend[i]), fine: [...fn].map(v => db(v / Math.max(1, c))), frames: c};
+}
+function computeStats(){
+  const edges = [0, ...SEC.b, A.dur], secs = [];
+  for (let i = 0; i < edges.length - 1; i++){
+    const a = edges[i], b = edges[i+1], I = integrated(a, b), i0 = Math.ceil(a * 10), i1 = Math.min(A.nBlk, Math.floor(b * 10));
+    let p = 0, sl = 0, sr = 0, slr = 0; for (let j = i0; j < i1; j++){ if (A.pk[j] > p) p = A.pk[j]; sl += A.eL[j]; sr += A.eR[j]; slr += A.eLR[j]; }
+    const peak = 20 * Math.log10(p + 1e-12);
+    secs.push(Object.assign({i, a, b, name: SEC.names[i] || `구간 ${i + 1}`, I, LRA: lra(a, b), peak, PLR: peak - I, lr: db(sl) - db(sr), corr: slr / Math.sqrt(sl * sr + 1e-20), ok: b - a >= 15}, bandStats(a, b)));
+  }
+  const all = Object.assign({I: integrated(0, A.dur), LRA: lra(0, A.dur)}, bandStats(0, A.dur));
+  return {secs, all};
+}
+
+// ---------- 판정 ----------
+const SRC = {
+  vocal:   {name: '보컬', check: '보컬 채널을 PAFL로 듣고 RTA 확인. 마이크와 입 거리(가까울수록 근접효과로 저중음 증가)와 채널 PEQ 점검'},
+  keys:    {name: '건반·패드', check: '건반 좌우 채널 PAFL + RTA. 패드 음색의 중음역, 코드 보이싱(오른손 음역) 점검'},
+  acoustic:{name: '어쿠스틱 기타', check: 'DI·마이크 채널의 바디 울림, 하이패스 위치(100~150Hz) 점검'},
+  eguitar: {name: '일렉 기타', check: '앰프 마이크 위치, 앰프·프리셋 EQ의 미드 점검'},
+  bass:    {name: '베이스', check: '베이스 DI 채널 저역과 톤, 킥과 겹치는 대역 점검'},
+  kick:    {name: '킥 드럼', check: '킥 채널 PEQ와 하이패스 점검'},
+  snare:   {name: '스네어·탐 울림', check: '스네어·탐 채널에서 특정 음으로 길게 우는 링 확인(좁은 Q로 컷)'},
+  cymbal:  {name: '심벌·하이햇·오버헤드', check: '오버헤드 레벨과 하이패스 점검'},
+  room:    {name: '공간 울림·마이크·시스템 EQ', check: '메인 GEQ/PEQ 설정, 녹음 신호가 메인 EQ 뒤에서 나오는지 확인'},
+  rumble:  {name: '무대 진동·핸들링', check: '보컬·어쿠스틱 채널 하이패스 확인'},
+};
+function baseCands(f){
+  if (f < 60)   return {bass: 2, kick: 2, rumble: 1.5, keys: .5, room: .5};
+  if (f < 150)  return {bass: 2, kick: 1.5, keys: 1, vocal: .8, room: 1};
+  if (f < 320)  return {keys: 1.5, acoustic: 1.5, vocal: 1.2, bass: 1, snare: 1, room: 1};
+  if (f < 800)  return {vocal: 1.5, keys: 1.5, acoustic: 1.2, eguitar: 1, snare: .8, room: .8};
+  if (f < 2000) return {vocal: 1.5, eguitar: 1.3, keys: 1, snare: .8, acoustic: .6, room: .6};
+  if (f < 6000) return {vocal: 1.6, eguitar: 1.2, cymbal: 1.2, acoustic: .8, snare: .6, room: .6};
+  return {cymbal: 2, vocal: 1, acoustic: .6, room: .6};
+}
+function repeatedRanges(S){
+  const ok = S.secs.filter(s => s.ok); if (ok.length < 2) return [];
+  const flag = FC.map((f, k) => { if (!fit0[k]) return 0; const md = median(ok.map(s => s.dev[k])), pos = ok.filter(s => s.dev[k] >= 1.5).length / ok.length, neg = ok.filter(s => s.dev[k] <= -1.5).length / ok.length; return pos >= 0.7 && md >= 2 ? 1 : neg >= 0.7 && md <= -2 ? -1 : 0; });
+  // 이웃 대역은 조금 느슨한 기준(60%, 중앙값 1.5 dB)으로 같은 범위에 붙임
+  const relax = (k, sg) => { if (!fit0[k]) return false; const md = median(ok.map(s => s.dev[k])), fr = ok.filter(s => sg > 0 ? s.dev[k] >= 1.5 : s.dev[k] <= -1.5).length / ok.length; return fr >= 0.6 && (sg > 0 ? md >= 1.5 : md <= -1.5); };
+  const base = flag.slice();
+  for (let k = 0; k < NB; k++) if (base[k]){ for (let j = k - 1; j >= 0 && !flag[j] && relax(j, base[k]); j--) flag[j] = base[k]; for (let j = k + 1; j < NB && !flag[j] && relax(j, base[k]); j++) flag[j] = base[k]; }
+  const out = [];
+  for (let k = 0; k < NB; k++){ if (!flag[k]) continue; let e = k; while (e + 1 < NB && flag[e+1] === flag[k]) e++;
+    const ks = []; for (let j = k; j <= e; j++) ks.push(j);
+    const ext = ok.map(s => flag[k] > 0 ? Math.max(...ks.map(j => s.dev[j])) : Math.min(...ks.map(j => s.dev[j])));
+    const cnt = ok.filter(s => ks.some(j => flag[k] > 0 ? s.dev[j] >= 1.5 : s.dev[j] <= -1.5)).length;
+    out.push({sign: flag[k], k0: k, k1: e, lo: FC[k], hi: FC[e], label: NOM[k] === NOM[e] ? NOM[k] + 'Hz' : NOM[k] + '–' + NOM[e] + 'Hz', med: Math.abs(median(ext)), max: Math.max(...ext.map(Math.abs)), cnt, tot: ok.length});
+    k = e; }
+  return out;
+}
+function evidence(S, R){
+  const ok = S.secs.filter(s => s.ok), ev = {};
+  // 1) 음높이: 구간마다 가장 튀는 세밀 피크가 같은 주파수인지
+  const lo = R.lo * 10 ** -0.05 / 2 ** (1/3), hi = R.hi * 10 ** 0.05 * 2 ** (1/3);
+  const idx = FF.map((f, i) => i).filter(i => FF[i] >= lo && FF[i] <= hi);
+  const peaks = [];
+  if (idx.length >= 6) for (const s of ok){
+    const tr = polyfit2(idx.map(i => Math.log2(FF[i])), idx.map(i => s.fine[i]));
+    let best = -1, bv = -1e9; idx.forEach(i => { const d = s.fine[i] - tr(Math.log2(FF[i])); if (d > bv){ bv = d; best = i; } });
+    if (bv > 1.5) peaks.push({s: s.name, f: FF[best]});
+  }
+  if (peaks.length >= 3){
+    const share = Math.max(...peaks.map(p => peaks.filter(q => Math.abs(q.f / p.f - 1) < 0.03).length)) / peaks.length;
+    ev.pitch = share >= 0.7 ? 'fixed' : 'moving';
+  } else ev.pitch = 'unknown';
+  ev.peaks = peaks;
+  // 2) 조용한 구간에도 있나
+  const Is = ok.map(s => s.I).filter(isFinite).sort((p, q) => p - q), medI = Is[Is.length >> 1];
+  const quiet = ok.filter(s => s.I < medI - 3), loud = ok.filter(s => s.I >= medI - 3);
+  const ext = s => { let m = R.sign > 0 ? -1e9 : 1e9; for (let k = R.k0; k <= R.k1; k++) m = R.sign > 0 ? Math.max(m, s.dev[k]) : Math.min(m, s.dev[k]); return m * R.sign; };
+  if (quiet.length){ const q = quiet.reduce((a, s) => a + ext(s), 0) / quiet.length, l = loud.reduce((a, s) => a + ext(s), 0) / Math.max(1, loud.length);
+    ev.quiet = q >= 2 ? 'all' : (l >= 2 && q < 1) ? 'loudOnly' : 'mixed'; ev.quietNames = quiet.map(s => s.name); } else ev.quiet = 'unknown';
+  // 3) 좌우 퍼짐: 이 대역의 사이드/미드 비율을 다른 대역과 비교
+  const smr = k => S.all.sv[k] - S.all.lv[k];
+  let inR = 0, c1 = 0, outR = 0, c2 = 0; FC.forEach((f, k) => { if (k >= R.k0 && k <= R.k1){ inR += smr(k); c1++; } else if (f >= 100 && f <= 5000){ outR += smr(k); c2++; } });
+  ev.width = A.mono ? 'unknown' : (inR / c1 - outR / c2);
+  ev.stereo = A.mono ? 'unknown' : ev.width <= -2 ? 'center' : ev.width >= 2 ? 'wide' : 'neutral';
+  // 4) 보컬 명료 대역(1.6–4kHz)과 함께 움직이나 (약한 단서)
+  if (R.hi < 1400){
+    const rel = [], pres = [], tot = [];
+    for (let f = 0; f < A.nFr; f++){ let t = 0, r = 0, p = 0; for (let k = 5; k < NB; k++){ const v = A.bandM[f*NB + k]; t += v; if (k >= R.k0 && k <= R.k1) r += v; if (FC[k] >= 1500 && FC[k] <= 4100) p += v; } tot.push(db(t)); rel.push(db(r) - db(t)); pres.push(db(p) - db(t)); }
+    const mx = Math.max(...tot), sm = a => a.map((_, i) => { let s = 0, c = 0; for (let j = Math.max(0, i - 6); j <= Math.min(a.length - 1, i + 6); j++){ s += a[j]; c++; } return s / c; });
+    const r1 = sm(rel), p1 = sm(pres), keep = tot.map(v => v > mx - 30);
+    ev.vcorr = corr(r1.filter((_, i) => keep[i]), p1.filter((_, i) => keep[i]));
+  } else ev.vcorr = NaN;
+  // 점수
+  const sc = baseCands(Math.sqrt(R.lo * R.hi)), add = (keys, v) => keys.forEach(k => { if (k in sc) sc[k] += v; });
+  if (R.sign > 0){
+    if (ev.pitch === 'moving'){ add(['vocal','keys','acoustic','eguitar','bass'], .8); add(['room','snare','kick','rumble'], -.8); }
+    if (ev.pitch === 'fixed'){ add(['room','snare','kick'], 1.2); add(['vocal','keys'], -.4); }
+    if (ev.quiet === 'all'){ add(['vocal','keys','acoustic'], .6); add(['kick','snare','bass','eguitar','cymbal'], -.6); }
+    if (ev.quiet === 'loudOnly'){ add(['kick','snare','bass','eguitar','cymbal'], .6); add(['keys','acoustic'], -.4); }
+    if (ev.stereo === 'center') add(['vocal','bass','kick','snare'], .5);
+    if (ev.stereo === 'wide'){ add(['keys','eguitar','cymbal','acoustic'], .6); add(['vocal'], -.4); }
+    if (ev.vcorr >= 0.4) add(['vocal'], .7); else if (ev.vcorr <= 0.15) { add(['vocal'], -.5); add(['keys'], .2); }
+  }
+  const top = Object.entries(sc).sort((a, b) => b[1] - a[1]).slice(0, 3); ev.rank = top.map(([k]) => k); ev.tie = top.length > 1 && top[0][1] - top[1][1] < 0.3;
+  return ev;
+}
+function buildFindings(S){
+  const F = [], ok = S.secs.filter(s => s.ok);
+  if (A.suspects.length) F.push(['bad', `하울링 의심 ${A.suspects.length}건`, A.suspects.slice(0, 3).map(r => `${mmss(r.t0)} ${fmtHz(r.f)}`).join(', ') + ' — 아래 하울링 점검에서 들어 보세요.']);
+  else F.push(['ok', '하울링 흔적 없음', `한 주파수만 홀로 커지는 소리가 없었습니다. 길게 남은 음 ${A.sustained}개는 배음을 동반하거나 커지지 않아 연주된 음으로 봤습니다.`]);
+  if (A.clipRuns) F.push(['warn', `찌그러짐(클리핑) ${A.clipRuns}곳`, '녹음 입력이나 내보내기 단계에서 최대치를 넘었습니다. 녹음 레벨을 낮추세요.']);
+  if (A.peak >= -0.5) F.push(['info', '최대치에 맞춘 흔적', `최대값이 ${A.peak.toFixed(1)} dBFS입니다. 내보낼 때 노멀라이즈가 켜졌을 수 있어, 주간 비교는 같은 설정으로 내보낸 파일끼리 하세요.`]);
+  if (ok.length){
+    const by = [...ok].filter(s => isFinite(s.I)).sort((a, b) => b.I - a.I), plr = ok.map(s => s.PLR).filter(isFinite);
+    if (by.length >= 2) F.push(['info', `가장 큰 구간: ${by[0].name} ${by[0].I.toFixed(1)} LUFS`, `가장 작은 구간은 ${by[by.length-1].name} ${by[by.length-1].I.toFixed(1)} LUFS로 ${(by[0].I - by[by.length-1].I).toFixed(1)} LU 차이입니다. 2위 구간과의 차이는 ${(by[0].I - by[1].I).toFixed(1)} LU입니다.`]);
+    const mn = Math.min(...plr), mx = Math.max(...plr);
+    F.push(mn < 10 ? ['warn', '많이 눌린 구간이 있음', `PLR이 ${mn.toFixed(1)} dB까지 내려갑니다. 메인 버스 컴프레서·리미터 설정을 확인하세요.`] : ['ok', '과한 압축 없음', `피크와 평균의 차이(PLR)가 ${mn.toFixed(1)}~${mx.toFixed(1)} dB입니다.`]);
+  }
+  for (const R of curRanges){
+    const sign = R.sign > 0 ? '튀어나옴' : '꺼짐';
+    F.push(['warn', `${R.label}가 ${R.tot}개 구간 중 ${R.cnt}개에서 ${sign} (보통 ${R.sign > 0 ? '+' : '−'}${R.med.toFixed(1)}, 최대 ${R.sign > 0 ? '+' : '−'}${R.max.toFixed(1)} dB)`, R.sign > 0 ? '곡과 관계없이 반복되면 채널·버스 EQ나 특정 악기 소리일 가능성이 큽니다. 아래 원인 후보를 보세요.' : '곡과 관계없이 비어 있으면 EQ 설정(메인 GEQ, 보컬 PEQ)이나 마이크 특성일 수 있습니다.']);
+  }
+  ok.forEach(s => { const k = s.dev.findIndex((v, k) => fit0[k] && v >= 4 && !curRanges.some(R => R.sign > 0 && k >= R.k0 && k <= R.k1)); if (k >= 0) F.push(['info', `${s.name}: ${NOM[k]}Hz 부근만 +${s.dev[k].toFixed(1)} dB`, '이 구간에서만 튀는 대역입니다. 그 구간에 앞으로 나온 악기를 확인하세요.']); });
+  if (!A.mono){
+    const lr = Math.max(...ok.map(s => Math.abs(s.lr))), cmin = Math.min(...ok.map(s => s.corr)), cmax = Math.max(...ok.map(s => s.corr));
+    if (lr > 1.5) F.push(['warn', `좌우 레벨 차이 최대 ${lr.toFixed(1)} dB`, '메인 LR 밸런스나 녹음 입력 레벨을 확인하세요.']);
+    else if (cmin < 0.2) F.push(['warn', '좌우 소리가 서로 많이 다름', `좌우 상관 ${cmin.toFixed(2)}까지. 위상 문제나 극단적 패닝을 확인하세요.`]);
+    else if (cmin > 0.95) F.push(['info', '거의 모노 믹스', `좌우 상관 ${cmin.toFixed(2)}~${cmax.toFixed(2)}.`]);
+    else F.push(['ok', '좌우 균형 양호', `좌우 레벨 차이 ±${lr.toFixed(1)} dB 이내, 좌우 상관 ${cmin.toFixed(2)}~${cmax.toFixed(2)}.`]);
+  }
+  const sub = db(10 ** (S.all.lv[0] / 10) + 10 ** (S.all.lv[1] / 10) + 10 ** (S.all.lv[2] / 10)) - db([5,6,7,8].reduce((s, k) => s + 10 ** (S.all.lv[k] / 10), 0));
+  if (sub > -10) F.push(['warn', '초저역(20–31Hz)이 많음', '무대 진동이나 불필요한 저역입니다. 보컬·건반·어쿠스틱 채널 하이패스를 확인하세요.']);
+  return F;
+}
+
+// ---------- 화면 ----------
+let curRanges = [];
+function recompute(){
+  curStats = computeStats(); curRanges = repeatedRanges(curStats); curFindings = buildFindings(curStats);
+  if (selSec >= curStats.secs.length) selSec = curStats.secs.length - 1;
+  renderFindings(); renderTimeline(); renderTable(); renderSpec(); renderHeat(); renderCands(); renderHowl();
+}
+function renderFindings(){
+  const ul = $('#fFindings'); ul.innerHTML = '';
+  for (const [k, t, d] of curFindings){ const li = document.createElement('li'); const p = document.createElement('span'); p.className = 'pill ' + k; p.textContent = {ok: '양호', warn: '점검', bad: '주의', info: '참고'}[k];
+    const div = document.createElement('div'); const b = document.createElement('b'); b.textContent = t; const q = document.createElement('p'); q.textContent = d; div.append(b, q); li.append(p, div); ul.appendChild(li); }
+}
+let tl = null;
+function renderTimeline(){
+  const box = $('#fTimeline'), W = Math.max(320, box.clientWidth || 600), H = 230, L = 40, R = 10, T = 24, B = 22, w = W - L - R, h = H - T - B;
+  if (!tl){ tl = el('svg', {}, box); tl.addEventListener('pointerdown', tlDown); tl.addEventListener('pointermove', tlMove); tl.addEventListener('pointerup', tlUp); tl.addEventListener('pointercancel', tlUp); }
+  tl.setAttribute('viewBox', `0 0 ${W} ${H}`); tl.innerHTML = '';
+  const st = A.st, lo = Math.floor(Math.min(...st.filter(v => v > -70).sort((a, b) => a - b).slice(0, Math.max(1, st.length / 50 | 0))) / 5) * 5 - 5, hi = Math.ceil((Math.max(...st) + 2) / 5) * 5;
+  const X = t => L + t / A.dur * w, Y = v => T + h - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * h;
+  tl._X = X; tl._W = W; tl._L = L; tl._w = w;
+  const edges = [0, ...SEC.b, A.dur];
+  for (let i = 0; i < edges.length - 1; i++){
+    el('rect', {x: X(edges[i]), y: T, width: Math.max(0, X(edges[i+1]) - X(edges[i])), height: h, fill: i === selSec ? 'rgba(98,181,255,.16)' : i % 2 ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.015)', 'data-sec': i}, tl);
+    txt(tl, X(edges[i]) + 4, T - 8, String(i + 1), {style: i === selSec ? 'fill:var(--fg);font-weight:700' : ''});
+  }
+  for (let v = lo; v <= hi; v += 5){ el('line', {x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'var(--line)'}, tl); txt(tl, L - 6, Y(v) + 4, String(v), {'text-anchor': 'end'}); }
+  const step = A.dur > 1500 ? 300 : A.dur > 600 ? 120 : A.dur > 240 ? 60 : 30;
+  for (let t = 0; t <= A.dur; t += step) txt(tl, X(t), H - 6, mmss(t), {'text-anchor': 'middle'});
+  let d = ''; st.forEach((v, i) => { d += (i ? 'L' : 'M') + X(i * 0.5 + 1.5).toFixed(1) + ' ' + Y(v).toFixed(1); });
+  el('path', {d, fill: 'none', stroke: 'var(--fg)', 'stroke-width': 1.3, 'pointer-events': 'none'}, tl);
+  SEC.b.forEach((t, i) => { const x = X(t);
+    el('line', {x1: x, x2: x, y1: T, y2: T + h, stroke: 'var(--accent)', 'stroke-width': 2, 'pointer-events': 'none'}, tl);
+    el('rect', {x: x - 9, y: T + h / 2 - 18, width: 18, height: 36, rx: 6, fill: 'var(--accent)', 'data-b': i, style: 'cursor:ew-resize'}, tl);
+    el('rect', {x: x - 14, y: T, width: 28, height: h, fill: 'transparent', 'data-b': i, style: 'cursor:ew-resize'}, tl); });
+  tl._ph = el('line', {x1: X(audio.currentTime || 0), x2: X(audio.currentTime || 0), y1: T - 4, y2: T + h, stroke: 'var(--warn)', 'stroke-width': 2, 'pointer-events': 'none'}, tl);
+}
+let drag = null;
+const tAt = e => { const r = tl.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width * tl._W; return Math.max(0, Math.min(A.dur, (x - tl._L) / tl._w * A.dur)); };
+function tlDown(e){
+  const b = e.target.getAttribute('data-b');
+  if (b !== null){ drag = +b; tl.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+  const t = tAt(e), edges = [0, ...SEC.b, A.dur]; selSec = Math.max(0, edges.findIndex((x, i) => i < edges.length - 1 && t >= x && t < edges[i+1]));
+  audio.currentTime = t; $('#fSecName').value = SEC.names[selSec] || ''; renderTimeline(); renderTable(); renderSpec(); updTime();
+}
+function tlMove(e){ if (drag === null) return; const t = tAt(e), lo = (drag ? SEC.b[drag-1] : 0) + 5, hi = (drag < SEC.b.length - 1 ? SEC.b[drag+1] : A.dur) - 5; SEC.b[drag] = Math.round(Math.max(lo, Math.min(hi, t)) * 2) / 2; renderTimeline(); }
+function tlUp(){ if (drag === null) return; drag = null; recompute(); }
+function renderTable(){
+  const tb = $('#fSecTable tbody'); tb.innerHTML = '';
+  const mx = Math.max(...curStats.secs.filter(s => s.ok && isFinite(s.I)).map(s => s.I));
+  curStats.secs.forEach((s, i) => { const tr = document.createElement('tr'); if (i === selSec) tr.className = 'sel';
+    [i + 1, s.name, mmss(s.a) + '–' + mmss(s.b), isFinite(s.I) ? s.I.toFixed(1) : '--', isFinite(s.I) && isFinite(mx) ? (s.I - mx).toFixed(1) : '--', isFinite(s.LRA) ? s.LRA.toFixed(1) : '--', isFinite(s.PLR) ? s.PLR.toFixed(1) : '--']
+      .forEach((c, j) => { const td = document.createElement('td'); td.textContent = c; if (!s.ok) td.className = 'dim'; tr.appendChild(td); });
+    tr.addEventListener('click', () => { selSec = i; $('#fSecName').value = SEC.names[i] || ''; renderTimeline(); renderTable(); renderSpec(); });
+    tb.appendChild(tr); });
+}
+function specChart(box, series, ranges, trend){
+  box.innerHTML = '';
+  const W = 900, H = 280, L = 40, R = 10, T = 16, B = 26, w = W - L - R, h = H - T - B;
+  const idx = FC.map((f, i) => i).filter(i => FC[i] >= 30), n = idx.length, X = k => L + (k + 0.5) / n * w;
+  const ymin = -36, ymax = 3, Y = v => T + h - (Math.max(ymin, Math.min(ymax, v)) - ymin) / (ymax - ymin) * h;
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`}, box);
+  for (let v = -36; v <= 0; v += 6){ el('line', {x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'var(--line)'}, svg); txt(svg, L - 6, Y(v) + 4, String(v), {'text-anchor': 'end'}); }
+  (ranges || []).forEach(Rg => { const k0 = idx.indexOf(Rg.k0), k1 = idx.indexOf(Rg.k1); if (k0 < 0) return;
+    el('rect', {x: X(k0) - w / n / 2, y: T, width: (k1 - k0 + 1) * w / n, height: h, fill: Rg.sign > 0 ? 'rgba(255,79,95,.13)' : 'rgba(98,181,255,.13)'}, svg);
+    txt(svg, X(k0), T + 12, Rg.label + (Rg.sign > 0 ? ' ▲' : ' ▼'), {style: `fill:${Rg.sign > 0 ? 'var(--bad)' : 'var(--accent)'}`}); });
+  series.forEach(s => { const mx = Math.max(...idx.map(i => s.v[i])); let d = ''; idx.forEach((i, k) => { d += (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(s.v[i] - mx - (s.off || 0)).toFixed(1); });
+    el('path', {d, fill: 'none', stroke: s.col, 'stroke-width': s.w || 2, 'stroke-dasharray': s.dash || 'none', 'stroke-linejoin': 'round'}, svg);
+    if (trend && s === series[0]){ let d2 = ''; idx.forEach((i, k) => { d2 += (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(trend[i] - mx).toFixed(1); }); el('path', {d: d2, fill: 'none', stroke: 'var(--muted)', 'stroke-dasharray': '4 4', 'stroke-width': 1.2}, svg); } });
+  idx.forEach((i, k) => { if (['31.5','63','125','250','500','1k','2k','4k','8k'].includes(NOM[i])) txt(svg, X(k), H - 8, NOM[i], {'text-anchor': 'middle'}); });
+  return svg;
+}
+function renderSpec(){ const s = curStats.secs[selSec];
+  specChart($('#fSpec'), [{v: curStats.all.lv, col: 'var(--accent)', w: 2.2}, {v: s.lv, col: 'var(--c)', w: 1.6}], curRanges, curStats.all.trend); }
+function renderHeat(){
+  const tbl = $('#fHeat'); tbl.innerHTML = ''; const show = FC.map((f, i) => i).filter(i => fit0[i]);
+  const hr = document.createElement('tr'); hr.appendChild(document.createElement('th')); show.forEach(i => { const th = document.createElement('th'); th.textContent = NOM[i]; hr.appendChild(th); }); tbl.appendChild(hr);
+  curStats.secs.forEach((s, r) => { const tr = document.createElement('tr'); const h = document.createElement('td'); h.className = 'rowh'; h.textContent = (r + 1) + '. ' + s.name + (s.ok ? '' : ' (짧음)'); tr.appendChild(h);
+    show.forEach(i => { const v = s.dev[i], rv = Math.round(v), td = document.createElement('td'); td.textContent = rv === 0 ? '0' : (rv > 0 ? '+' : '') + rv;
+      const a = Math.min(1, Math.abs(v) / 6); td.style.background = Math.abs(v) < 1.5 || !s.ok ? 'transparent' : v > 0 ? `rgba(255,79,95,${(a * .7).toFixed(2)})` : `rgba(98,181,255,${(a * .7).toFixed(2)})`;
+      td.style.color = Math.abs(v) < 1.5 || !s.ok ? 'var(--dim)' : 'var(--fg)'; tr.appendChild(td); });
+    tbl.appendChild(tr); });
+}
+function renderCands(){
+  const box = $('#fCands'); box.innerHTML = ''; const pos = curRanges.filter(R => R.sign > 0);
+  if (!pos.length){ box.innerHTML = '<p class="sub" style="margin:0">구간마다 반복해서 튀는 대역이 없습니다.</p>'; return; }
+  for (const R of pos){
+    const ev = evidence(curStats, R); R.ev = ev;
+    const c = document.createElement('div'); c.className = 'cand';
+    const h = document.createElement('h3'); h.textContent = `${R.label} — 가능성 높은 순서`; c.appendChild(h);
+    const rk = document.createElement('div'); rk.className = 'rank';
+    ev.rank.forEach((k, i) => { const d = document.createElement('div'); const r = document.createElement('span'); r.className = 'r'; r.textContent = ev.tie && i < 2 ? '공동 1위' : (i + 1) + '순위';
+      const b = document.createElement('span'); b.textContent = SRC[k].name; const sm = document.createElement('small'); sm.textContent = '확인: ' + SRC[k].check; b.appendChild(sm); d.append(r, b); rk.appendChild(d); });
+    c.appendChild(rk);
+    const ul = document.createElement('ul'); ul.className = 'evid';
+    const li = (bold, rest) => { const x = document.createElement('li'); const b = document.createElement('b'); b.textContent = bold; x.append(b, ' ' + rest); ul.appendChild(x); };
+    const pk = ev.peaks.map(p => `${p.s} ${Math.round(p.f)}Hz(${noteName(p.f)})`).join(', ');
+    if (ev.pitch === 'moving') li('음높이를 따라 움직임.', `구간마다 가장 튀는 음이 다릅니다(${pk}). 공간 공진·드럼 링처럼 고정된 주파수가 아니라, 연주된 음(보컬·건반·기타)이 이 대역에 쌓인 것으로 보입니다. 곡이 하나뿐이면 이 단서는 약합니다.`);
+    else if (ev.pitch === 'fixed') li('고정된 주파수.', `곡이 바뀌어도 같은 자리가 튑니다(${pk}). 공간 울림, 스네어·탐 링, 마이크·EQ 특성을 먼저 의심하세요.`);
+    else li('음높이 단서 부족.', '판단할 만큼 긴 구간이 적습니다.');
+    if (ev.quiet === 'all') li('조용한 구간에도 있음.', `${ev.quietNames.join(', ')}처럼 밴드가 적은 구간에서도 튑니다. 처음부터 연주하는 악기(건반·보컬·어쿠스틱 기타) 쪽이고, 드럼·베이스 가능성은 낮습니다.`);
+    else if (ev.quiet === 'loudOnly') li('큰 구간에서만 있음.', '밴드 전체가 들어올 때만 튀어서 드럼·일렉 기타·베이스 쪽 가능성이 큽니다.');
+    else if (ev.quiet === 'mixed') li('구간별로 섞여 있음.', '조용한 구간과 큰 구간에서 정도가 다릅니다.');
+    if (ev.stereo === 'center') li('가운데에 모인 소리.', `다른 대역보다 좌우 차이 성분이 ${(-ev.width).toFixed(1)} dB 적습니다. 보컬·베이스·킥·스네어처럼 가운데 패닝된 소리일 가능성.`);
+    else if (ev.stereo === 'wide') li('좌우로 퍼진 소리.', `다른 대역보다 좌우 차이 성분이 ${ev.width.toFixed(1)} dB 많습니다. 스테레오 건반·패드, 좌우 기타, 오버헤드 쪽.`);
+    else if (ev.stereo === 'neutral') li('좌우 퍼짐은 보통.', '가운데 소리와 퍼진 소리가 섞여 있어 이 단서로는 구분이 어렵습니다.');
+    if (isFinite(ev.vcorr)) li(ev.vcorr >= 0.4 ? '보컬 명료 대역과 같이 움직임.' : ev.vcorr <= 0.15 ? '보컬 명료 대역과 따로 움직임.' : '보컬 명료 대역과의 관계 약함.', `1.6–4kHz와의 시간 상관 ${ev.vcorr.toFixed(2)} (약한 단서).`);
+    c.appendChild(ul);
+    const tip = document.createElement('p'); tip.className = 'sub'; tip.style.margin = '0';
+    tip.textContent = `확인 순서: 리허설 때 위 순위대로 채널을 하나씩 PAFL하며 dLive RTA에서 ${R.label} 부근이 솟는 채널을 찾고, 그 채널 PEQ에서 Q 1.4 정도로 2~3 dB 줄여 보세요.`;
+    c.appendChild(tip); box.appendChild(c);
+  }
+}
+function renderHowl(){
+  const ul = $('#fHowl'); ul.innerHTML = '';
+  const add = (k, t, d, at) => { const li = document.createElement('li'); const p = document.createElement('span'); p.className = 'pill ' + k; p.textContent = k === 'ok' ? '양호' : '주의';
+    const div = document.createElement('div'); const b = document.createElement('b'); b.textContent = t; const q = document.createElement('p'); q.textContent = d; div.append(b, q);
+    if (at !== undefined){ const btn = document.createElement('button'); btn.textContent = '▶ 들어보기'; btn.style.marginTop = '6px'; btn.onclick = () => { audio.currentTime = Math.max(0, at - 1.5); play(true); }; div.appendChild(btn); }
+    li.append(p, div); ul.appendChild(li); };
+  if (!A.suspects.length) add('ok', '하울링으로 볼 만한 소리 없음', `100Hz–11kHz에서 0.6초 이상 이어진 좁은 대역 소리 ${A.sustained}개를 찾았지만, 모두 배음을 동반하거나 점점 커지지 않아 연주된 음으로 판단했습니다. 0.6초보다 짧게 잡힌 하울링은 놓칠 수 있습니다.`);
+  A.suspects.forEach(r => add('bad', `${mmss(r.t0)} · ${fmtHz(r.f)} (${noteName(r.f)}) · ${r.dur.toFixed(1)}초`, `주변보다 ${r.prom.toFixed(0)} dB 솟고 ${r.trend.toFixed(0)} dB 커짐. EQ로 깎는다면 가장 가까운 31밴드 ${nearestBand(r.f)}Hz.`, r.t0));
+}
+
+// ---------- 재생 + EQ ----------
+const audio = new Audio(); audio.preload = 'auto';
+let actx = null, eqF = [], eqOn = false;
+const EQ = [{f: 560, g: -3, q: 1.4}, {f: 4500, g: 2, q: 1.4}];
+function buildEqUI(){
+  const box = $('#fEqBands'); box.innerHTML = '';
+  EQ.forEach((b, i) => { const d = document.createElement('div'); d.className = 'eqband';
+    d.innerHTML = `<b>밴드 ${i + 1}</b><div class="row"><label class="grow">주파수(Hz)<input type="number" id="eqf${i}" min="30" max="11000" step="10"></label><label>Q<input type="number" id="eqq${i}" min="0.3" max="10" step="0.1" style="width:80px"></label><label>dB<input type="number" id="eqg${i}" min="-12" max="12" step="0.5" style="width:80px"></label></div>`;
+    box.appendChild(d);
+    ['f','q','g'].forEach(k => { const inp = d.querySelector(`#eq${k}${i}`); inp.value = b[k]; inp.addEventListener('input', () => { const v = +inp.value; if (isFinite(v)){ b[k] = v; applyEq(); } }); }); });
+}
+function applyEq(){ if (!actx) return; EQ.forEach((b, i) => { eqF[i].frequency.value = b.f; eqF[i].Q.value = b.q; eqF[i].gain.value = eqOn ? b.g : 0; }); }
+function ensureCtx(){
+  if (actx) return; actx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = actx.createMediaElementSource(audio); let node = src;
+  EQ.forEach(() => { const f = actx.createBiquadFilter(); f.type = 'peaking'; node.connect(f); node = f; eqF.push(f); });
+  node.connect(actx.destination); applyEq();
+}
+async function play(force){
+  ensureCtx(); if (actx.state === 'suspended') await actx.resume();
+  if (audio.paused || force){ try { await audio.play(); } catch(e){ toast('재생할 수 없습니다: ' + e.message); } } else audio.pause();
+}
+function updTime(){ $('#fTime').textContent = mmss(audio.currentTime) + ' / ' + mmss(A ? A.dur : 0); if (tl && tl._ph){ const x = tl._X(audio.currentTime); tl._ph.setAttribute('x1', x); tl._ph.setAttribute('x2', x); } }
+audio.addEventListener('play', () => { $('#fPlay').textContent = '❚❚ 일시정지'; const loop = () => { updTime(); if (!audio.paused) requestAnimationFrame(loop); }; loop(); });
+audio.addEventListener('pause', () => { $('#fPlay').textContent = '▶ 재생'; updTime(); });
+audio.addEventListener('seeked', updTime);
+$('#fPlay').addEventListener('click', () => play(false));
+$('#fEqToggle').addEventListener('click', () => { eqOn = !eqOn; $('#fEqToggle').textContent = eqOn ? 'EQ 켜짐' : 'EQ 꺼짐'; $('#fEqToggle').classList.toggle('on', eqOn); applyEq(); });
+$('#fEqSuggest').addEventListener('click', () => {
+  const p = curRanges.find(R => R.sign > 0), n = curRanges.find(R => R.sign < 0);
+  if (!p && !n){ toast('반복되는 대역이 없어 제안값이 없습니다.'); return; }
+  if (p) Object.assign(EQ[0], {f: Math.round(Math.sqrt(p.lo * p.hi) / 10) * 10, g: -3, q: 1.4}); else EQ[0].g = 0;
+  if (n) Object.assign(EQ[1], {f: Math.round(Math.sqrt(n.lo * n.hi) / 10) * 10, g: 2, q: 1.4}); else EQ[1].g = 0;
+  buildEqUI(); applyEq(); toast('제안값을 넣었습니다. EQ를 켜고 비교해 보세요.');
+});
+
+// ---------- 구간 편집 버튼 ----------
+$('#fAddB').addEventListener('click', () => { if (!A) return; const t = Math.round(audio.currentTime * 2) / 2;
+  if (t < 5 || t > A.dur - 5 || SEC.b.some(x => Math.abs(x - t) < 5)){ toast('기존 경계나 시작·끝과 5초 이상 떨어진 곳에 추가할 수 있습니다.'); return; }
+  const edges = [0, ...SEC.b, A.dur], i = edges.findIndex((x, k) => k < edges.length - 1 && t >= x && t < edges[k+1]);
+  SEC.b.splice(i, 0, t); SEC.names.splice(i + 1, 0, SEC.names[i] ? SEC.names[i] + ' (뒤)' : ''); selSec = i + 1; recompute(); });
+$('#fMerge').addEventListener('click', () => { if (!A || selSec >= SEC.b.length){ toast('마지막 구간은 다음 구간이 없습니다.'); return; }
+  SEC.b.splice(selSec, 1); SEC.names.splice(selSec + 1, 1); recompute(); });
+$('#fAuto').addEventListener('click', () => { if (!A) return; SEC = {b: autoSections(), names: []}; selSec = 0; $('#fSecName').value = ''; recompute(); });
+$('#fSecName').addEventListener('input', e => { if (!SEC) return; SEC.names[selSec] = e.target.value.trim(); if (curStats.secs[selSec]) curStats.secs[selSec].name = SEC.names[selSec] || `구간 ${selSec + 1}`; renderTable(); });
+$('#fSecName').addEventListener('change', () => { if (A) recompute(); });
+window.addEventListener('resize', () => { if (A && !$('#tab-file').hidden) renderTimeline(); });
+
+// ---------- 파일 열기 ----------
+$('#fFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  $('#fResult').hidden = true; audio.pause();
+  if (file.size > 80e6) toast('큰 파일입니다. 휴대폰에서는 멈출 수 있어요.');
+  try {
+    prog(0.01, '파일 읽는 중…');
+    const ab = await file.arrayBuffer(); prog(0.03, '오디오 풀어내는 중… (몇 초~수십 초)');
+    const oc = new OfflineAudioContext(2, 1, FS);
+    const buf = await oc.decodeAudioData(ab);
+    if (buf.duration < 20) throw new Error('20초 이상인 녹음이 필요합니다.');
+    A = await analyzeBuffer(buf);
+    prog(0.97, '정리 중…'); await sleep0();
+    A.st = stSeries(); A.fileName = file.name;
+    SEC = {b: autoSections(), names: []}; selSec = 0;
+    if (audio.src) URL.revokeObjectURL(audio.src); audio.src = URL.createObjectURL(file);
+    $('#fInfo').textContent = `${file.name} · ${mmss(A.dur)} · ${A.mono ? '모노' : '스테레오'} · 전체 ${integrated(0, A.dur).toFixed(1)} LUFS`;
+    $('#fResult').hidden = false; $('#fProg').hidden = true;
+    $('#fStatus').textContent = `분석 완료. 구간 ${SEC.b.length + 1}개로 자동으로 나눴습니다. 경계는 끌어서 고칠 수 있습니다.`;
+    const d = new Date(); $('#fDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    $('#fSecName').value = '';
+    buildEqUI(); recompute(); updTime();
+  } catch(err){ console.error(err); $('#fProg').hidden = true; $('#fStatus').textContent = '분석하지 못했습니다: ' + (err.message || err.name) + ' — 다른 형식(mp3·wav)으로 내보내 다시 시도해 보세요.'; }
+});
+
+// ---------- 주간 비교 ----------
+const KEY = 'wvm.weeks';
+const loadW = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ return []; } };
+const saveW = a => { try { localStorage.setItem(KEY, JSON.stringify(a)); return true; } catch(e){ toast('저장하지 못했습니다(브라우저 저장소 사용 불가).'); return false; } };
+const GROUPS = [['저음', 63, 200], ['저중음', 250, 630], ['중음', 800, 2000], ['프레즌스', 2500, 5000], ['고음', 6300, 10000]];
+const grpLv = (lv, lo, hi) => db(FC.reduce((s, f, k) => s + (f >= lo * 0.95 && f <= hi * 1.05 ? 10 ** (lv[k] / 10) : 0), 0));
+$('#fSave').addEventListener('click', () => {
+  if (!A) return; const S = curStats, tot = db(FC.reduce((s, f, k) => s + (f >= 60 ? 10 ** (S.all.lv[k] / 10) : 0), 0));
+  const rec = {id: Date.now().toString(36), date: $('#fDate').value || new Date().toISOString().slice(0, 10), memo: $('#fMemo').value.trim(), file: A.fileName, dur: A.dur, I: S.all.I, LRA: S.all.LRA,
+    maxI: Math.max(...S.secs.filter(s => s.ok).map(s => s.I).filter(isFinite)),
+    rel: S.all.lv.map(v => +(v - tot).toFixed(2)), dev: S.all.dev.map(v => +v.toFixed(2)),
+    groups: GROUPS.map(([n, lo, hi]) => +(grpLv(S.all.lv, lo, hi) - tot).toFixed(2)),
+    ranges: curRanges.map(R => (R.sign > 0 ? '▲' : '▼') + R.label), suspects: A.suspects.length,
+    secs: S.secs.map(s => ({name: s.name, a: s.a, b: s.b, I: +(+s.I).toFixed(2)}))};
+  const all = loadW(); all.push(rec); all.sort((a, b) => a.date.localeCompare(b.date)); if (saveW(all)){ if (wSel.size >= 4) wSel.delete([...wSel][0]); wSel.add(rec.id); toast(`${rec.date} 분석을 저장했습니다. 주간 비교 탭에서 볼 수 있습니다.`); renderWeeks(); }
+});
+let wSel = new Set(), wDelArm = null;
+const COLS = ['var(--accent)', 'var(--c)', 'var(--warn)', 'var(--ok)'];
+function renderWeeks(){
+  const all = loadW(), ul = $('#wList'); ul.innerHTML = '';
+  if (!all.length){ ul.innerHTML = '<li><span></span><p class="sub" style="margin:0">아직 저장된 분석이 없습니다. 녹음 분석 탭 맨 아래에서 「이 분석 저장」을 누르세요.</p></li>'; $('#wCmpCard').hidden = true; return; }
+  if (!wSel.size) all.slice(-2).forEach(r => wSel.add(r.id));
+  for (const id of [...wSel]) if (!all.some(r => r.id === id)) wSel.delete(id);
+  all.forEach(r => { const li = document.createElement('li'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = wSel.has(r.id); cb.setAttribute('aria-label', r.date + ' 선택');
+    cb.onchange = () => { if (cb.checked){ if (wSel.size >= 4){ cb.checked = false; toast('한 번에 4개까지 비교합니다.'); return; } wSel.add(r.id); } else wSel.delete(r.id); renderWeeks(); };
+    const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = `${r.date} · ${r.I.toFixed(1)} LUFS`; const p = document.createElement('p'); p.textContent = [r.memo, r.file, r.ranges.join(' ')].filter(Boolean).join(' · '); d.append(b, p);
+    const del = document.createElement('button'); del.textContent = wDelArm === r.id ? '정말 삭제' : '삭제';
+    del.onclick = () => { if (wDelArm !== r.id){ wDelArm = r.id; renderWeeks(); setTimeout(() => { if (wDelArm === r.id){ wDelArm = null; renderWeeks(); } }, 4000); return; } wDelArm = null; saveW(loadW().filter(x => x.id !== r.id)); wSel.delete(r.id); renderWeeks(); };
+    li.append(cb, d, del); ul.appendChild(li); });
+  const sel = all.filter(r => wSel.has(r.id)); $('#wCmpCard').hidden = !sel.length; if (!sel.length) return;
+  const svg = specChart($('#wSpec'), sel.map((r, i) => ({v: r.rel, col: COLS[i], w: i === sel.length - 1 ? 2.4 : 1.6})), null, null);
+  const lg = $('#wLegend'); lg.innerHTML = ''; sel.forEach((r, i) => { const s = document.createElement('span'); s.innerHTML = `<span class="sw" style="background:${COLS[i]}"></span>`; s.append(r.date + (r.memo ? ' · ' + r.memo : '')); lg.appendChild(s); });
+  const t = $('#wTable'); t.innerHTML = '';
+  const head = ['날짜', '전체 LUFS', '최대 구간', 'LRA', ...GROUPS.map(g => `${g[0]} ${g[1] >= 1000 ? g[1] / 1000 + 'k' : g[1]}–${g[2] >= 1000 ? g[2] / 1000 + 'k' : g[2]}`), '반복 대역', '하울링'];
+  const tr0 = document.createElement('tr'); head.forEach(h => { const th = document.createElement('th'); th.textContent = h; tr0.appendChild(th); }); t.appendChild(tr0);
+  sel.forEach((r, i) => { const pv = sel[i - 1], tr = document.createElement('tr');
+    const dlt = (v, p) => p === undefined || !isFinite(p) ? '' : ` (${v - p >= 0 ? '+' : ''}${(v - p).toFixed(1)})`;
+    [r.date, r.I.toFixed(1) + dlt(r.I, pv && pv.I), r.maxI.toFixed(1) + dlt(r.maxI, pv && pv.maxI), isFinite(r.LRA) ? r.LRA.toFixed(1) : '--', ...r.groups.map((g, k) => g.toFixed(1) + dlt(g, pv && pv.groups[k])), r.ranges.join(' ') || '없음', r.suspects ? r.suspects + '건' : '없음']
+      .forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); }); t.appendChild(tr); });
+}
+$('#wExport').addEventListener('click', () => { const all = loadW(); if (!all.length){ toast('저장된 분석이 없습니다.'); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({app: 'worship-meter', v: 1, weeks: all}, null, 1)], {type: 'application/json'}));
+  a.download = `worship-weeks_${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); });
+$('#wImport').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return;
+  try { const j = JSON.parse(await f.text()), inc = Array.isArray(j) ? j : j.weeks; if (!Array.isArray(inc)) throw new Error('형식이 다릅니다');
+    const all = loadW(); let n = 0; inc.forEach(r => { if (r && r.id && r.date && Array.isArray(r.rel) && !all.some(x => x.id === r.id)){ all.push(r); n++; } });
+    all.sort((a, b) => a.date.localeCompare(b.date)); if (saveW(all)) toast(`${n}개를 가져왔습니다.`); renderWeeks(); } catch(err){ toast('가져오지 못했습니다: ' + err.message); } e.target.value = ''; });
+
+// ---------- 탭 ----------
+function showTab(t){
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  ['live', 'file', 'week'].forEach(k => { $('#tab-' + k).hidden = k !== t; });
+  document.querySelector('.ctrl').style.display = t === 'live' ? '' : 'none';
+  if (t === 'file' && A) renderTimeline();
+  if (t === 'week') renderWeeks();
+  try { localStorage.setItem('wvm.tab', t); } catch(e){}
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+try { const t = localStorage.getItem('wvm.tab'); if (t === 'file' || t === 'week') showTab(t); } catch(e){}
+window.__fa = {get A(){ return A; }, get S(){ return curStats; }, get R(){ return curRanges; }, get SEC(){ return SEC; }, get F(){ return curFindings; }, get audio(){ return audio; }};
 })();
 </script>
 </body>
