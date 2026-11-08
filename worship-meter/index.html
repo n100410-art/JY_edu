@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1113">
+<title>찬양팀 음량계</title>
+<style>
+/* 무대 뒤 콘솔 옆에서 보는 화면: 어두운 단일 테마, 큰 숫자 우선, 세로는 1열 · 가로/태블릿은 2열 */
+:root{
+  --bg:#0d1012; --panel:#15191c; --panel2:#1b2024; --line:#272e33;
+  --fg:#e9edf0; --muted:#8a949b; --dim:#5d666d;
+  --ok:#39d08a; --warn:#ffb43d; --bad:#ff4f5f; --accent:#62b5ff; --c:#b991ff;
+  --mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.45}
+body{padding-top:env(safe-area-inset-top,0px);padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+[hidden]{display:none!important}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;min-height:44px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:#06121e;border-color:transparent;font-weight:700}
+button.primary.stop{background:var(--bad);color:#fff}
+select,input[type=number],input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-height:44px;min-width:0}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:18px;margin:0;letter-spacing:-.01em}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--dim)}
+.dot.live{background:var(--bad);box-shadow:0 0 0 4px rgba(255,79,95,.2);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(255,79,95,0)}}
+@media (prefers-reduced-motion:reduce){.dot.live{animation:none}}
+.ctrl{display:flex;gap:8px;flex:1 1 280px;justify-content:flex-end}
+.ctrl select{flex:1 1 auto;max-width:260px}
+.notice{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;color:var(--fg)}
+.notice.err{border-color:var(--bad)}
+.banner{border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:17px;font-weight:600;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.banner.bad{background:rgba(255,79,95,.16);border:1px solid var(--bad);color:#ffd4d8}
+.banner.warn{background:rgba(255,180,61,.14);border:1px solid var(--warn);color:#ffe6bf}
+.banner b{font-family:var(--mono);font-size:20px}
+.grid{display:grid;gap:10px;grid-template-columns:1fr;align-items:start}
+@media (min-width:860px){.grid{grid-template-columns:minmax(320px,0.85fr) 1.15fr}.meter{grid-row:span 2}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.card h2{font-size:14px;margin:0;font-weight:700}
+.card h2 small,.sub{color:var(--muted);font-weight:400;font-size:12px}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;padding:8px 14px;min-height:40px;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--panel2);color:var(--fg);font-weight:700}
+.tag{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag.ok{color:var(--ok);border-color:rgba(57,208,138,.4)}
+.big{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+#bigVal{font-family:var(--mono);font-size:clamp(72px,22vw,128px);font-weight:700;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--ok);transition:color .3s}
+.big .unit{font-size:18px;color:var(--muted)}
+.lvl-warn{color:var(--warn)!important}.lvl-bad{color:var(--bad)!important}.lvl-ok{color:var(--ok)!important}
+.tbar{position:relative;height:12px;background:var(--panel2);border-radius:6px;margin-top:14px;overflow:hidden}
+#tfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ok);border-radius:6px;transition:width .12s linear,background .3s}
+#tmark{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--fg)}
+.tlabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 0}
+.stats div{background:var(--panel2);border-radius:10px;padding:8px 10px;min-width:0}
+.stats dt{font-size:11px;color:var(--muted)}
+.stats dd{margin:2px 0 0;font-family:var(--mono);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stats dd.main{color:var(--fg)}
+@media (max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}}
+.balance{margin-top:16px;display:grid;gap:8px}
+.brow{display:grid;grid-template-columns:44px 1fr 64px;align-items:center;gap:10px;font-size:13px}
+.brow .bt{height:10px;background:var(--panel2);border-radius:5px;overflow:hidden}
+.brow .bf{height:100%;width:0;background:var(--accent);border-radius:5px;transition:width .15s linear}
+.brow .bv{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.bal-note{font-size:12px;color:var(--muted);margin-top:2px}
+canvas{display:block;width:100%}
+#specCv{height:240px}
+#histCv{height:170px}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.chk input{width:18px;height:18px}
+.song{display:flex;gap:8px;margin-top:10px}
+.song input{flex:1 1 auto}
+.song button{white-space:nowrap}
+.tbl{overflow-x:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:12px}
+th:nth-child(2),td:nth-child(2){text-align:left;white-space:normal}
+td.hi{color:var(--bad);font-weight:700}
+.empty{color:var(--muted);font-size:13px;padding:10px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.howl-list{list-style:none;margin:6px 0 0;padding:0;font-size:13px;font-family:var(--mono)}
+.howl-list li{padding:5px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+h3{font-size:13px;margin:16px 0 0;color:var(--muted);font-weight:600}
+details.settings summary{cursor:pointer;font-weight:700;font-size:14px;min-height:28px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
+.field{display:grid;gap:4px;font-size:13px}
+.field .help{font-size:12px;color:var(--muted)}
+.inline{display:flex;gap:6px}
+.inline input{flex:1 1 auto;width:100%}
+footer{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6;max-width:72ch}
+footer b{color:var(--fg);font-weight:600}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="dot" id="liveDot"></span><h1>찬양팀 음량계</h1></div>
+  <div class="ctrl">
+    <select id="device" aria-label="마이크 선택"><option value="">기본 마이크</option></select>
+    <button id="startBtn" class="primary">측정 시작</button>
+  </div>
+</header>
+
+<div id="notice" class="notice">「측정 시작」을 누르고 마이크 사용을 허용하세요. 휴대폰을 음향 콘솔 위나 회중석 귀 높이에 두고, 화면이 위를 향하게 놓으면 됩니다.</div>
+<div id="howlBanner" class="banner bad" hidden>하울링 의심 <b id="howlHz">-</b> <span>EQ 대역 <b id="howlBand">-</b></span></div>
+<div id="overBanner" class="banner warn" hidden>기준 초과 <b id="overSec">0</b>초 · 지금 <b id="overVal">-</b></div>
+
+<main class="grid">
+  <section class="card meter">
+    <div class="card-head">
+      <div class="seg" role="group" aria-label="가중치">
+        <button data-w="A" aria-pressed="true">dB(A)</button>
+        <button data-w="C" aria-pressed="false">dB(C)</button>
+      </div>
+      <span class="tag" id="calTag">보정 전 · 추정값</span>
+    </div>
+    <div class="big"><span id="bigVal">--</span><span class="unit" id="bigUnit">dB(A)</span></div>
+    <div class="sub" id="bigSub">현재 음량 (약 0.3초 평균)</div>
+    <div class="tbar"><div id="tfill"></div><div id="tmark"></div></div>
+    <div class="tlabels"><span>50</span><span id="tUpperLabel">기준 95</span><span>115</span></div>
+    <dl class="stats">
+      <div><dt id="leq1Label">1분 평균</dt><dd id="leq1">--</dd></div>
+      <div><dt>15분 평균</dt><dd id="leq15">--</dd></div>
+      <div><dt>전체 평균</dt><dd id="leqAll">--</dd></div>
+      <div><dt>최대</dt><dd id="lmax">--</dd></div>
+    </dl>
+    <div class="balance" aria-label="대역 균형">
+      <div class="brow"><span>저음</span><div class="bt"><div class="bf" id="bLow"></div></div><span class="bv" id="vLow">--</span></div>
+      <div class="brow"><span>중음</span><div class="bt"><div class="bf" id="bMid"></div></div><span class="bv" id="vMid">--</span></div>
+      <div class="brow"><span>고음</span><div class="bt"><div class="bf" id="bHigh"></div></div><span class="bv" id="vHigh">--</span></div>
+      <div class="bal-note" id="balNote">저음 25–200Hz · 중음 250Hz–2kHz · 고음 2.5–16kHz (보정 없음)</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>주파수 스펙트럼 <small>1/3옥타브 · 보정 없음(Z)</small></h2>
+      <label class="chk"><input type="checkbox" id="curveChk"> 세부 곡선</label>
+    </div>
+    <canvas id="specCv" aria-label="1/3옥타브 스펙트럼"></canvas>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>시간 흐름 <small>최근 10분 · 1초 평균</small></h2><span class="sub"><span style="color:var(--accent)">━</span> A &nbsp;<span style="color:var(--c)">━</span> C</span></div>
+    <canvas id="histCv" aria-label="음량 기록 그래프"></canvas>
+    <div class="song">
+      <input type="text" id="songName" placeholder="곡 이름 (선택)" aria-label="곡 이름">
+      <button id="songBtn">곡 시작 표시</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>곡별 요약</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>#</th><th>곡</th><th>길이</th><th>평균 A</th><th>평균 C</th><th>최대 A</th></tr></thead>
+      <tbody id="songBody"></tbody>
+    </table></div>
+    <div class="empty" id="songEmpty">측정을 시작하면 곡별 평균이 여기에 쌓입니다. 곡이 바뀔 때 「곡 시작 표시」를 누르세요.</div>
+    <div class="actions">
+      <button id="csvBtn">기록 CSV 저장</button>
+      <button id="resetBtn">기록 초기화</button>
+    </div>
+    <h3>하울링 기록</h3>
+    <ul class="howl-list" id="howlLog"><li><span>아직 없음</span></li></ul>
+  </section>
+
+  <details class="card settings" id="settingsBox">
+    <summary>설정 · 보정</summary>
+    <div class="form">
+      <label class="field">기준 상한 (dB)
+        <input type="number" id="setUpper" step="1" min="60" max="120">
+        <span class="help">이 값을 넘으면 빨간색, 3dB 아래부터 노란색</span>
+      </label>
+      <label class="field">기준 판단 값
+        <select id="setMetric"><option value="1m">1분 평균 (권장)</option><option value="now">현재 음량</option></select>
+      </label>
+      <label class="field">경고까지 지속 시간 (초)
+        <input type="number" id="setAlertSec" step="1" min="1" max="120">
+      </label>
+      <label class="field">하울링 감도
+        <select id="setHowl"><option value="low">낮음 (오탐 적음)</option><option value="mid">보통</option><option value="high">높음 (빨리 잡음)</option></select>
+      </label>
+      <label class="chk"><input type="checkbox" id="setVibrate"> 기준 초과·하울링 때 진동</label>
+      <label class="field">보정값 (dB)
+        <input type="number" id="setOffset" step="0.5">
+        <span class="help">마이크 입력(dBFS)에 더하는 값. 기종마다 다릅니다.</span>
+      </label>
+      <div class="field">기준 소음계로 맞추기
+        <div class="inline"><input type="number" id="refVal" step="0.1" placeholder="소음계 값 예: 85.0"><button id="calBtn">맞추기</button></div>
+        <span class="help">소음계와 나란히 두고 일정한 소리(핑크노이즈 등)를 낸 상태에서, 같은 가중치(A/C) 값을 입력하세요.</span>
+      </div>
+      <div class="field">보정 초기화
+        <button id="calReset">기본값(110)으로</button>
+      </div>
+    </div>
+    <p class="sub" id="trackInfo" style="margin-top:12px"></p>
+  </details>
+</main>
+
+<footer>
+  <b>정확도 안내</b> · 보정하지 않은 휴대폰 값은 실제와 수 dB 이상 다를 수 있습니다. 같은 폰·같은 위치에서 주마다 비교하는 용도로 먼저 쓰고, 정확한 값이 필요하면 소음계로 한 번 보정하세요. 내장 마이크는 100Hz 아래 저음과 100dB 이상 큰 소리를 실제보다 낮게 잡는 경우가 많습니다. USB-C 측정용 마이크를 꽂으면 위 마이크 목록에서 고를 수 있습니다.<br>
+  <b>참고</b> · WHO 안전 청취 기준(공연장·행사)은 15분 평균 100 dB(A) 이하입니다.
+</footer>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const N = 16384;               // FFT 크기 (48kHz에서 약 0.34초, 2.9Hz 간격)
+const TICK_MS = 80;
+const HIST_VIEW = 600;         // 그래프에 보이는 초
+const NOMINAL = ['25','31.5','40','50','63','80','100','125','160','200','250','315','400','500','630','800','1k','1.25k','1.6k','2k','2.5k','3.15k','4k','5k','6.3k','8k','10k','12.5k','16k'];
+
+// ---------- 설정 ----------
+const DEF = {offset:110, calibrated:false, upper:95, metric:'1m', alertSec:10, vibrate:true, weight:'A', howlSens:'mid', curve:false, deviceId:''};
+let S = {...DEF};
+try { Object.assign(S, JSON.parse(localStorage.getItem('wvm.settings') || '{}')); } catch(e) {}
+const save = () => { try { localStorage.setItem('wvm.settings', JSON.stringify(S)); } catch(e) {} };
+
+// ---------- FFT ----------
+let re, im, win, winS = 0, rev, cosT, sinT;
+function initFFT(n){
+  re = new Float64Array(n); im = new Float64Array(n); win = new Float64Array(n); winS = 0;
+  for (let i=0;i<n;i++){ win[i] = 0.5 - 0.5*Math.cos(2*Math.PI*i/(n-1)); winS += win[i]*win[i]; }
+  rev = new Uint32Array(n); const bits = Math.log2(n);
+  for (let i=0;i<n;i++){ let r=0,x=i; for(let b=0;b<bits;b++){ r=(r<<1)|(x&1); x>>=1; } rev[i]=r; }
+  cosT = new Float64Array(n/2); sinT = new Float64Array(n/2);
+  for (let i=0;i<n/2;i++){ cosT[i]=Math.cos(2*Math.PI*i/n); sinT[i]=-Math.sin(2*Math.PI*i/n); }
+}
+function fft(n){
+  for (let i=0;i<n;i++){ const j=rev[i]; if (j>i){ let t=re[i]; re[i]=re[j]; re[j]=t; t=im[i]; im[i]=im[j]; im[j]=t; } }
+  for (let size=2; size<=n; size<<=1){
+    const half=size>>1, step=n/size;
+    for (let i=0;i<n;i+=size){
+      for (let j=0,k=0;j<half;j++,k+=step){
+        const a=i+j, b=a+half;
+        const tr=re[b]*cosT[k]-im[b]*sinT[k], ti=re[b]*sinT[k]+im[b]*cosT[k];
+        re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti;
+      }
+    }
+  }
+}
+initFFT(N);
+
+// ---------- 가중치 (IEC 61672) ----------
+function aW(f){ const f2=f*f; const r=(12194**2*f2*f2)/((f2+20.6**2)*Math.sqrt((f2+107.7**2)*(f2+737.9**2))*(f2+12194**2)); return 20*Math.log10(r)+2.0; }
+function cW(f){ const f2=f*f; const r=(12194**2*f2)/((f2+20.6**2)*(f2+12194**2)); return 20*Math.log10(r)+0.06; }
+
+let fs=48000, binHz, P, gA, gC, bands=[];
+function setupAnalysis(sr){
+  fs = sr; binHz = fs/N;
+  P = new Float64Array(N/2); gA = new Float64Array(N/2); gC = new Float64Array(N/2);
+  for (let k=1;k<N/2;k++){ const f=k*binHz; gA[k]=10**(aW(f)/10); gC[k]=10**(cW(f)/10); }
+  bands = [];
+  for (let n=-16;n<=12;n++){
+    const fc=1000*10**(n/10), lo=fc*10**(-1/20), hi=fc*10**(1/20);
+    if (hi > fs/2) break;
+    let k0=Math.max(1,Math.ceil(lo/binHz)), k1=Math.min(N/2-1,Math.floor(hi/binHz));
+    if (k1<k0){ k0=k1=Math.round(fc/binHz); }
+    bands.push({fc, label:NOMINAL[n+16], k0, k1, ms:0, peak:-Infinity, peakT:0});
+  }
+}
+setupAnalysis(fs);
+const toDb = ms => 10*Math.log10(ms + 1e-20) + S.offset;
+const fmt = v => (isFinite(v) && v > -50) ? v.toFixed(1) : '--';
+
+// ---------- 상태 ----------
+let ctx=null, stream=null, analyser=null, timeBuf=null, running=false, raf=0, wakeLock=null;
+let lastT=0, cur={A:-Infinity,C:-Infinity,Z:-Infinity};
+let sec={a:0,c:0,t:0,max:-Infinity}, secStart=0, t0=0;
+let hist=[];            // {t: epoch ms, el: 경과초, msA, msC, la, lc, maxA, song, howl}
+let songs=[];           // {no, name, startEl}
+let tot={a:0,c:0,t:0}, maxA=-Infinity, maxC=-Infinity;
+let howl={cand:0,dur:0,lastSeen:0,active:false,freq:0}, howlLog=[];
+let overT=0, lastVib=0;
+
+// ---------- 오디오 ----------
+async function start(){
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia){
+    showNotice('이 주소에서는 브라우저가 마이크를 막습니다. https:// 주소로 올린 페이지에서 열어 주세요. (안내문의 「설치 방법」 참고)', true);
+    return;
+  }
+  try {
+    const audio = {echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:1};
+    if (S.deviceId) audio.deviceId = {exact:S.deviceId};
+    try { stream = await navigator.mediaDevices.getUserMedia({audio}); }
+    catch(e){ if (S.deviceId && (e.name==='OverconstrainedError'||e.name==='NotFoundError')){ S.deviceId=''; save(); delete audio.deviceId; stream = await navigator.mediaDevices.getUserMedia({audio}); } else throw e; }
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    if (ctx.state==='suspended') await ctx.resume();
+    setupAnalysis(ctx.sampleRate);
+    const src = ctx.createMediaStreamSource(stream);
+    analyser = ctx.createAnalyser(); analyser.fftSize = N; analyser.smoothingTimeConstant = 0;
+    src.connect(analyser);
+    timeBuf = new Float32Array(N);
+    running = true; lastT = 0;
+    const now = Date.now();
+    if (!t0){ t0 = now; songs.push({no:1, name:$('#songName').value.trim(), startEl:0}); $('#songName').value=''; }
+    secStart = performance.now(); sec={a:0,c:0,t:0,max:-Infinity};
+    $('#startBtn').textContent='측정 정지'; $('#startBtn').classList.add('stop');
+    $('#liveDot').classList.add('live');
+    hideNotice();
+    reqWake();
+    await listDevices();
+    showTrackInfo();
+    raf = requestAnimationFrame(loop);
+  } catch(e){
+    console.error(e);
+    const msg = e.name==='NotAllowedError' ? '마이크 권한이 거부되었습니다. 주소창 왼쪽 자물쇠 → 권한에서 마이크를 허용한 뒤 다시 시도하세요.'
+      : e.name==='NotFoundError' ? '사용할 수 있는 마이크를 찾지 못했습니다.' : '마이크를 열지 못했습니다: '+e.message;
+    showNotice(msg, true); stop();
+  }
+}
+function stop(){
+  running=false; cancelAnimationFrame(raf);
+  if (stream) stream.getTracks().forEach(t=>t.stop()); stream=null;
+  if (ctx) ctx.close().catch(()=>{}); ctx=null;
+  if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; }
+  $('#startBtn').textContent= t0 ? '측정 계속' : '측정 시작'; $('#startBtn').classList.remove('stop');
+  $('#liveDot').classList.remove('live');
+  $('#howlBanner').hidden = true; $('#overBanner').hidden = true;
+}
+async function reqWake(){ try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible' && running) reqWake(); });
+
+async function listDevices(){
+  try {
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    const sel = $('#device'); const curId = stream?.getAudioTracks()[0]?.getSettings().deviceId || S.deviceId;
+    sel.innerHTML = '';
+    const o0 = document.createElement('option'); o0.value=''; o0.textContent='기본 마이크'; sel.appendChild(o0);
+    devs.forEach((d,i)=>{ if (d.deviceId==='default'||d.deviceId==='') return; const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||('마이크 '+(i+1)); sel.appendChild(o); });
+    sel.value = S.deviceId && [...sel.options].some(o=>o.value===S.deviceId) ? S.deviceId : '';
+  } catch(e){}
+}
+navigator.mediaDevices?.addEventListener?.('devicechange', listDevices);
+
+function showTrackInfo(){
+  const tr = stream?.getAudioTracks()[0]; if (!tr) return;
+  const s = tr.getSettings ? tr.getSettings() : {};
+  const onoff = v => v===undefined ? '알 수 없음' : (v ? '켜짐 ⚠' : '꺼짐');
+  $('#trackInfo').textContent = `입력: ${tr.label||'마이크'} · ${Math.round(fs)}Hz · 자동 음량 조절 ${onoff(s.autoGainControl)} · 잡음 제거 ${onoff(s.noiseSuppression)} · 에코 제거 ${onoff(s.echoCancellation)}`;
+}
+
+// ---------- 분석 루프 ----------
+function loop(now){
+  if (!running) return;
+  raf = requestAnimationFrame(loop);
+  if (lastT && now-lastT < TICK_MS) return;
+  const dt = lastT ? Math.min((now-lastT)/1000, 0.5) : TICK_MS/1000;
+  lastT = now;
+  analyser.getFloatTimeDomainData(timeBuf);
+  for (let i=0;i<N;i++){ re[i]=timeBuf[i]*win[i]; im[i]=0; }
+  fft(N);
+  const norm = 2/(N*winS);
+  let z=0,a=0,c=0;
+  for (let k=1;k<N/2;k++){ const p=(re[k]*re[k]+im[k]*im[k])*norm; P[k]=p; z+=p; a+=p*gA[k]; c+=p*gC[k]; }
+  for (const b of bands){ let s=0; for (let k=b.k0;k<=b.k1;k++) s+=P[k]; b.ms=s; }
+  cur = {A:toDb(a), C:toDb(c), Z:toDb(z)};
+  if (cur.A>maxA) maxA=cur.A; if (cur.C>maxC) maxC=cur.C;
+  sec.a += a*dt; sec.c += c*dt; sec.t += dt; if (cur.A>sec.max) sec.max=cur.A;
+  tot.a += a*dt; tot.c += c*dt; tot.t += dt;
+  detectHowl(dt, now);
+  if (now - secStart >= 1000){ pushSecond(); secStart = now; }
+  checkOver(dt, now);
+  render(now, dt);
+}
+
+function pushSecond(){
+  if (sec.t<=0) return;
+  const msA=sec.a/sec.t, msC=sec.c/sec.t;
+  const t=Date.now();
+  hist.push({t, el:Math.round((t-t0)/1000), msA, msC, la:toDb(msA), lc:toDb(msC), maxA:sec.max, song:songs.length, howl: howl.active ? Math.round(howl.freq) : ''});
+  sec={a:0,c:0,t:0,max:-Infinity};
+  updateRolling(); renderSongs(); drawHist();
+}
+let roll={A1:NaN,C1:NaN,A15:NaN,C15:NaN};
+function leqOf(arr,key){ if(!arr.length) return NaN; let s=0; for(const h of arr) s+=h[key]; return toDb(s/arr.length); }
+function updateRolling(){
+  const a1=hist.slice(-60), a15=hist.slice(-900);
+  roll = {A1:leqOf(a1,'msA'), C1:leqOf(a1,'msC'), A15:leqOf(a15,'msA'), C15:leqOf(a15,'msC')};
+}
+
+// ---------- 하울링 감지 ----------
+function detectHowl(dt, now){
+  const kMin=Math.ceil(80/binHz), kMax=Math.min(N/2-2, Math.floor(12000/binHz));
+  let pk=kMin, pv=0;
+  for (let k=kMin;k<=kMax;k++) if (P[k]>pv){ pv=P[k]; pk=k; }
+  const f=pk*binHz;
+  const lo=Math.max(1, Math.min(Math.floor(f/2**(1/6)/binHz), pk-40)), hi=Math.min(N/2-1, Math.max(Math.ceil(f*2**(1/6)/binHz), pk+40));
+  const arr=[]; for (let k=lo;k<=hi;k++) if (Math.abs(k-pk)>4) arr.push(P[k]);
+  arr.sort((x,y)=>x-y);
+  const med = arr[arr.length>>1] || 1e-20;
+  const prom = 10*Math.log10(pv/med);
+  const lvl = toDb(pv);
+  // 포물선 보간으로 정확한 주파수
+  const y0=10*Math.log10(P[pk-1]+1e-20), y1=10*Math.log10(pv+1e-20), y2=10*Math.log10(P[pk+1]+1e-20);
+  const d = (y0-2*y1+y2)!==0 ? 0.5*(y0-y2)/(y0-2*y1+y2) : 0;
+  const fi = (pk+Math.max(-0.5,Math.min(0.5,d)))*binHz;
+  const thr = {low:30, mid:24, high:18}[S.howlSens] || 24;
+  if (prom>=thr && lvl>50){
+    if (howl.cand && Math.abs(fi-howl.cand)/howl.cand < 0.03) howl.dur += dt; else { howl.cand=fi; howl.dur=dt; }
+    howl.lastSeen = now;
+    if (howl.dur>=0.6){
+      if (!howl.active){
+        howl.active=true; howl.freq=fi;
+        howlLog.unshift({t:new Date(), f:fi, band:nearestBand(fi)}); howlLog=howlLog.slice(0,20); renderHowlLog();
+        vib([120,60,120,60,120]);
+      }
+      howl.freq = fi;
+    }
+  } else if (now-howl.lastSeen > 300){ howl.cand=0; howl.dur=0; }
+  if (howl.active && now-howl.lastSeen > 2000) howl.active=false;
+}
+function nearestBand(f){ let best=bands[0], bd=Infinity; for (const b of bands){ const d=Math.abs(Math.log(f/b.fc)); if (d<bd){bd=d;best=b;} } return best?.label||'-'; }
+const fmtHz = f => f>=1000 ? (f/1000).toFixed(f>=10000?1:2)+'kHz' : Math.round(f)+'Hz';
+
+// ---------- 기준 초과 ----------
+function metricVal(){ const w=S.weight; return S.metric==='now' ? cur[w] : (w==='A'?roll.A1:roll.C1); }
+function checkOver(dt, now){
+  const v=metricVal();
+  if (isFinite(v) && v > S.upper){ overT += dt; } else overT = 0;
+  const show = overT >= S.alertSec;
+  $('#overBanner').hidden = !show;
+  if (show){
+    $('#overSec').textContent = Math.floor(overT);
+    $('#overVal').textContent = fmt(v)+' dB('+S.weight+')';
+    if (now-lastVib > 15000){ vib([300,150,300]); lastVib = now; }
+  }
+}
+function vib(p){ if (S.vibrate && navigator.vibrate) try{ navigator.vibrate(p); }catch(e){} }
+
+// ---------- 그리기 ----------
+const lvClass = v => !isFinite(v) ? 'lvl-ok' : v > S.upper ? 'lvl-bad' : v > S.upper-3 ? 'lvl-warn' : 'lvl-ok';
+const colorOf = v => getComputedStyle(document.documentElement).getPropertyValue(v > S.upper ? '--bad' : v > S.upper-3 ? '--warn' : '--ok');
+let lastText=0;
+function render(now, dt){
+  const w=S.weight, v=cur[w];
+  if (now-lastText > 150){
+    lastText=now;
+    const big=$('#bigVal'); big.textContent=fmt(v);
+    const mv = metricVal();
+    big.className = lvClass(v);
+    $('#leq1').textContent = fmt(w==='A'?roll.A1:roll.C1);
+    $('#leq1').className = 'main '+lvClass(w==='A'?roll.A1:roll.C1);
+    $('#leq15').textContent = fmt(w==='A'?roll.A15:roll.C15);
+    $('#leqAll').textContent = fmt(tot.t? toDb((w==='A'?tot.a:tot.c)/tot.t) : NaN);
+    $('#lmax').textContent = fmt(w==='A'?maxA:maxC);
+    const pct = x => Math.max(0,Math.min(100,(x-50)/65*100));
+    $('#tfill').style.width = pct(v)+'%';
+    $('#tfill').style.background = colorOf(S.metric==='now'?v:mv);
+    // 대역 균형
+    const sumB = (lo,hi) => { let s=0; for (const b of bands) if (b.fc>=lo*0.95 && b.fc<=hi*1.05) s+=b.ms; return toDb(s); };
+    const L=sumB(25,200), M=sumB(250,2000), H=sumB(2500,16000);
+    [['Low',L],['Mid',M],['High',H]].forEach(([k,x])=>{ $('#b'+k).style.width=Math.max(0,Math.min(100,(x-40)/75*100))+'%'; $('#v'+k).textContent=fmt(x); });
+    if (isFinite(L)&&isFinite(M)&&L>0) $('#balNote').textContent = `저음−중음 ${(L-M>=0?'+':'')+(L-M).toFixed(1)} dB · 고음−중음 ${(H-M>=0?'+':'')+(H-M).toFixed(1)} dB`;
+    // 하울링 배너
+    $('#howlBanner').hidden = !howl.active;
+    if (howl.active){ $('#howlHz').textContent = fmtHz(howl.freq); $('#howlBand').textContent = nearestBand(howl.freq)+'Hz'; }
+  }
+  drawSpec(now, dt);
+}
+
+function fitCanvas(cv){
+  const r=cv.getBoundingClientRect(), d=window.devicePixelRatio||1;
+  const W=Math.round(r.width*d), H=Math.round(r.height*d);
+  if (cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
+  const g=cv.getContext('2d'); g.setTransform(d,0,0,d,0,0); return {g, w:r.width, h:r.height};
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function drawSpec(now, dt){
+  const cv=$('#specCv'); const {g,w,h}=fitCanvas(cv);
+  const padL=30, padB=20, padT=8, padR=6, W=w-padL-padR, H=h-padB-padT;
+  const yMin=20, yMax=110, Y=v=>padT+H-(Math.max(yMin,Math.min(yMax,v))-yMin)/(yMax-yMin)*H;
+  g.clearRect(0,0,w,h);
+  g.font='10px '+css('--mono'); g.fillStyle=css('--muted'); g.strokeStyle=css('--line'); g.lineWidth=1;
+  for (let v=30; v<=110; v+=20){ const y=Math.round(Y(v))+.5; g.beginPath(); g.moveTo(padL,y); g.lineTo(w-padR,y); g.stroke(); g.textAlign='right'; g.fillText(v,padL-4,y+3); }
+  const n=bands.length; if (!n) return;
+  const bw=W/n, gap=Math.max(1,bw*0.18);
+  const hb = howl.active ? nearestBand(howl.freq) : null;
+  for (let i=0;i<n;i++){
+    const b=bands[i]; const v=running? toDb(b.ms) : -Infinity;
+    if (v>b.peak){ b.peak=v; b.peakT=now; } else if (now-b.peakT>1500) b.peak -= 20*(dt||0.08);
+    const x=padL+i*bw+gap/2, bwi=bw-gap;
+    if (isFinite(v)){ g.fillStyle = b.label===hb ? css('--bad') : css('--accent'); const y=Y(v); g.fillRect(x,y,bwi,padT+H-y); }
+    if (isFinite(b.peak) && b.peak>yMin){ g.fillStyle=css('--fg'); g.fillRect(x,Y(b.peak)-1,bwi,2); }
+    if (['31.5','63','125','250','500','1k','2k','4k','8k','16k'].includes(b.label)){ g.fillStyle=css('--muted'); g.textAlign='center'; g.fillText(b.label,x+bwi/2,h-6); }
+  }
+  // 세부 곡선 (로그 주파수 축, 1/3옥타브 폭으로 환산한 모양 비교용)
+  if (S.curve && running){
+    const fLo=bands[0].fc*10**(-1/20), fHi=bands[n-1].fc*10**(1/20), lr=Math.log(fHi/fLo);
+    g.strokeStyle=css('--warn'); g.globalAlpha=.85; g.lineWidth=1.2; g.beginPath();
+    let started=false;
+    for (let px=0; px<W; px+=2){
+      const f1=fLo*Math.exp(lr*px/W), f2=fLo*Math.exp(lr*(px+2)/W);
+      let k1=Math.max(1,Math.floor(f1/binHz)), k2=Math.max(k1,Math.min(N/2-1,Math.floor(f2/binHz)));
+      let m=0; for (let k=k1;k<=k2;k++) if (P[k]>m) m=P[k];
+      const fc=(f1+f2)/2, v=toDb(m*(fc*0.2316)/binHz);
+      const x=padL+px, y=Y(v);
+      if (!started){ g.moveTo(x,y); started=true; } else g.lineTo(x,y);
+    }
+    g.stroke(); g.globalAlpha=1;
+  }
+  if (!running){ g.fillStyle=css('--muted'); g.textAlign='center'; g.font='13px '+css('--sans'); g.fillText('측정을 시작하면 대역별 막대가 움직입니다', padL+W/2, padT+H/2); }
+}
+
+function drawHist(){
+  const cv=$('#histCv'); const {g,w,h}=fitCanvas(cv);
+  const padL=30, padB=18, padT=8, padR=6, W=w-padL-padR, H=h-padB-padT;
+  const yMin=50, yMax=115, Y=v=>padT+H-(Math.max(yMin,Math.min(yMax,v))-yMin)/(yMax-yMin)*H;
+  g.clearRect(0,0,w,h);
+  g.font='10px '+css('--mono'); g.strokeStyle=css('--line'); g.fillStyle=css('--muted'); g.lineWidth=1;
+  for (let v=60; v<=110; v+=10){ const y=Math.round(Y(v))+.5; g.beginPath(); g.moveTo(padL,y); g.lineTo(w-padR,y); g.stroke(); g.textAlign='right'; g.fillText(v,padL-4,y+3); }
+  // 기준선
+  g.strokeStyle=css('--bad'); g.setLineDash([5,4]); const yu=Math.round(Y(S.upper))+.5; g.beginPath(); g.moveTo(padL,yu); g.lineTo(w-padR,yu); g.stroke(); g.setLineDash([]);
+  if (!hist.length){ g.fillStyle=css('--muted'); g.textAlign='center'; g.font='13px '+css('--sans'); g.fillText('1초마다 평균값이 기록됩니다', padL+W/2, padT+H/2); return; }
+  const endEl = hist[hist.length-1].el, startEl = endEl-HIST_VIEW;
+  const X = el => padL + (el-startEl)/HIST_VIEW*W;
+  // 곡 표시
+  g.textAlign='left';
+  for (const s of songs){ if (s.startEl<startEl) continue; const x=Math.round(X(s.startEl))+.5; g.strokeStyle=css('--dim'); g.beginPath(); g.moveTo(x,padT); g.lineTo(x,padT+H); g.stroke(); g.fillStyle=css('--muted'); g.fillText(String(s.no), x+3, padT+10); }
+  const line=(key,color,alpha)=>{ g.strokeStyle=color; g.globalAlpha=alpha; g.lineWidth=1.6; g.beginPath(); let st=false;
+    for (const p of hist){ if (p.el<startEl) continue; const x=X(p.el), y=Y(p[key]); if(!st){g.moveTo(x,y);st=true;} else g.lineTo(x,y); } g.stroke(); g.globalAlpha=1; };
+  line('lc', css('--c'), .7); line('la', css('--accent'), 1);
+  // 시간축
+  g.fillStyle=css('--muted'); g.textAlign='center';
+  for (let m=0;m<=10;m+=2){ const el=startEl+m*60; if (el<0) continue; g.textAlign = m===10 ? 'right' : 'center'; g.fillText((m===10?'지금':'-'+(10-m)+'분'), m===10 ? w-padR : X(el), h-4); }
+}
+
+// ---------- 곡 / 기록 ----------
+function markSong(){
+  if (!t0){ showNotice('측정을 먼저 시작하세요.'); return; }
+  const el = Math.round((Date.now()-t0)/1000);
+  songs.push({no:songs.length+1, name:$('#songName').value.trim(), startEl:el});
+  $('#songName').value=''; renderSongs(); drawHist();
+}
+function renderSongs(){
+  const body=$('#songBody'); body.innerHTML='';
+  $('#songEmpty').hidden = hist.length>0;
+  const rows = songs.map(s=>{ const hs=hist.filter(h=>h.song===s.no); return {s, hs}; }).filter(r=>r.hs.length);
+  const maxLeq = Math.max(...rows.map(r=>leqOf(r.hs,'msA')));
+  for (const {s,hs} of rows){
+    const la=leqOf(hs,'msA'), lc=leqOf(hs,'msC'), mx=Math.max(...hs.map(h=>h.maxA)), d=hs.length;
+    const tr=document.createElement('tr');
+    const cells=[s.no, s.name||'—', Math.floor(d/60)+':'+String(d%60).padStart(2,'0'), fmt(la), fmt(lc), fmt(mx)];
+    cells.forEach((c,i)=>{ const td=document.createElement('td'); td.textContent=c; if (i===3 && rows.length>1 && la===maxLeq) td.className='hi'; if (i===3 && la>S.upper) td.className='hi'; tr.appendChild(td); });
+    body.appendChild(tr);
+  }
+}
+function renderHowlLog(){
+  const ul=$('#howlLog'); ul.innerHTML='';
+  if (!howlLog.length){ ul.innerHTML='<li><span>아직 없음</span></li>'; return; }
+  for (const e of howlLog){ const li=document.createElement('li'); const a=document.createElement('span'); a.textContent=[e.t.getHours(),e.t.getMinutes(),e.t.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':'); const b=document.createElement('span'); b.textContent=fmtHz(e.f)+' → EQ '+e.band+'Hz'; li.append(a,b); ul.appendChild(li); }
+}
+function exportCSV(){
+  if (!hist.length){ showNotice('저장할 기록이 아직 없습니다.'); return; }
+  const esc = v => { const s=String(v??''); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines=['시각,경과(초),곡번호,곡이름,LAeq_1s,LCeq_1s,LA_최대,하울링(Hz),보정값'];
+  for (const h of hist){ const s=songs[h.song-1]||{}; const d=new Date(h.t);
+    lines.push([d.toLocaleString('sv-SE').replace(' ','T'), h.el, h.song, s.name||'', h.la.toFixed(1), h.lc.toFixed(1), h.maxA.toFixed(1), h.howl, S.offset].map(esc).join(',')); }
+  const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const d=new Date(hist[0].t); const name=`worship-level_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.csv`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1000);
+}
+let resetArm=0;
+function resetAll(){
+  const btn=$('#resetBtn');
+  if (Date.now()-resetArm > 4000){ resetArm=Date.now(); btn.textContent='한 번 더 누르면 삭제'; setTimeout(()=>{ btn.textContent='기록 초기화'; }, 4000); return; }
+  resetArm=0; btn.textContent='기록 초기화';
+  hist=[]; songs=[]; tot={a:0,c:0,t:0}; maxA=maxC=-Infinity; howlLog=[]; roll={A1:NaN,C1:NaN,A15:NaN,C15:NaN}; overT=0;
+  t0 = running ? Date.now() : 0; if (running) songs.push({no:1,name:'',startEl:0});
+  renderSongs(); renderHowlLog(); drawHist();
+  if (!running){ ['#leq1','#leq15','#leqAll','#lmax','#bigVal'].forEach(s=>$(s).textContent='--'); $('#startBtn').textContent='측정 시작'; }
+}
+
+// ---------- UI 연결 ----------
+function showNotice(t, err){ const n=$('#notice'); n.textContent=t; n.hidden=false; n.classList.toggle('err', !!err); }
+function hideNotice(){ $('#notice').hidden=true; }
+function syncUI(){
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.w===S.weight)));
+  $('#bigUnit').textContent='dB('+S.weight+')';
+  $('#tUpperLabel').textContent='기준 '+S.upper;
+  $('#tmark').style.left=Math.max(0,Math.min(100,(S.upper-50)/65*100))+'%';
+  $('#leq1Label').textContent = '1분 평균' + (S.metric==='1m' ? ' · 기준' : '');
+  $('#calTag').textContent = S.calibrated ? '보정됨 ('+(+S.offset).toFixed(1)+')' : '보정 전 · 추정값';
+  $('#calTag').classList.toggle('ok', !!S.calibrated);
+  $('#setUpper').value=S.upper; $('#setMetric').value=S.metric; $('#setAlertSec').value=S.alertSec;
+  $('#setHowl').value=S.howlSens; $('#setVibrate').checked=S.vibrate; $('#setOffset').value=S.offset; $('#curveChk').checked=S.curve;
+}
+$('#startBtn').addEventListener('click', ()=> running ? stop() : start());
+$('#device').addEventListener('change', async e=>{ S.deviceId=e.target.value; save(); if (running){ stop(); await start(); } });
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click', ()=>{ S.weight=b.dataset.w; save(); syncUI(); }));
+$('#curveChk').addEventListener('change', e=>{ S.curve=e.target.checked; save(); });
+$('#songBtn').addEventListener('click', markSong);
+$('#songName').addEventListener('keydown', e=>{ if (e.key==='Enter') markSong(); });
+$('#csvBtn').addEventListener('click', exportCSV);
+$('#resetBtn').addEventListener('click', resetAll);
+$('#setUpper').addEventListener('change', e=>{ const v=+e.target.value; if (v>=40&&v<=130){ S.upper=v; save(); syncUI(); drawHist(); } });
+$('#setMetric').addEventListener('change', e=>{ S.metric=e.target.value; save(); syncUI(); });
+$('#setAlertSec').addEventListener('change', e=>{ const v=+e.target.value; if (v>=1) { S.alertSec=v; save(); } });
+$('#setHowl').addEventListener('change', e=>{ S.howlSens=e.target.value; save(); });
+$('#setVibrate').addEventListener('change', e=>{ S.vibrate=e.target.checked; save(); });
+$('#setOffset').addEventListener('change', e=>{ const v=+e.target.value; if (isFinite(v)){ S.offset=v; save(); syncUI(); } });
+$('#calBtn').addEventListener('click', ()=>{
+  const ref=+$('#refVal').value, now=cur[S.weight];
+  if (!running || !isFinite(now)){ showNotice('측정 중일 때 맞출 수 있습니다.'); return; }
+  if (!isFinite(ref) || ref<20 || ref>140){ showNotice('소음계 값을 dB 단위 숫자로 입력하세요. 예: 85'); return; }
+  S.offset = Math.round((S.offset + ref - now)*10)/10; S.calibrated=true; save(); syncUI();
+  showNotice(`보정값을 ${S.offset} dB로 맞췄습니다. 같은 폰·같은 마이크를 쓰는 동안 유지됩니다.`);
+});
+$('#calReset').addEventListener('click', ()=>{ S.offset=110; S.calibrated=false; save(); syncUI(); });
+window.addEventListener('resize', ()=>{ drawHist(); if(!running) drawSpec(performance.now(),0); });
+
+syncUI(); renderSongs(); drawHist(); drawSpec(performance.now(),0);
+if (!window.isSecureContext) showNotice('지금 주소는 https가 아니라서 마이크가 막힐 수 있습니다. https 주소(예: GitHub Pages, Netlify)에 올려 열어 주세요.', true);
+window.__wvm = {get cur(){return cur}, get howl(){return howl}, get hist(){return hist}, get roll(){return roll}, get bands(){return bands}};
+})();
+</script>
+</body>
+</html>
